@@ -1,8 +1,10 @@
 # RAG Pipeline Dependencies — MRPL Sovereign AI Workbench
 # SIH26117 | Team: Meenaloshini (RAG Engineer)
 
-# ── PDF extraction ─────────────────────────────────────────────────────────────
+# ── PDF extraction & OCR ──────────────────────────────────────────────────────
 PyMuPDF>=1.23.0             # fitz — fast, local PDF text extraction
+pytesseract>=0.3.10         # OCR for scanned PDFs
+Pillow>=10.0.0              # Image processing for OCR
 
 # ── Embeddings (local model, no cloud) ────────────────────────────────────────
 sentence-transformers>=2.6.0  # all-MiniLM-L6-v2 — 80MB, CPU-friendly

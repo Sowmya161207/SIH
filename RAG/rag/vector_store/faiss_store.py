@@ -170,6 +170,7 @@ class FAISSVectorStore:
         self,
         query_vector: np.ndarray,
         top_k: int = DEFAULT_TOP_K,
+        where_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Find the *top_k* most similar chunks to *query_vector*.
@@ -197,16 +198,31 @@ class FAISSVectorStore:
             vec = vec.reshape(1, -1)
         faiss.normalize_L2(vec)
 
-        k = min(top_k, self.index.ntotal)
-        scores, indices = self.index.search(vec, k)
+        # If filtering is required, fetch more results initially to compensate
+        fetch_k = min(top_k * 10 if where_filter else top_k, self.index.ntotal)
+        scores, indices = self.index.search(vec, fetch_k)
 
         results: List[Dict[str, Any]] = []
         for score, idx in zip(scores[0], indices[0]):
             if idx < 0:          # FAISS returns -1 for padded slots
                 continue
             entry = dict(self.metadata[idx])
+            
+            # Manual filter for FAISS
+            if where_filter:
+                match = True
+                for k, v in where_filter.items():
+                    if entry.get(k) != v:
+                        match = False
+                        break
+                if not match:
+                    continue
+            
             entry["score"] = float(round(float(score), 4))
             results.append(entry)
+            
+            if len(results) >= top_k:
+                break
 
         return results
 

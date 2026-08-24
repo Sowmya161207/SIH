@@ -12,8 +12,7 @@ class ChatService:
         """Process chat message and return response with RAG source citations."""
         logger.info(f"Processing chat request. Conversation ID: {request.conversation_id}")
 
-        rag_result = retrieve(query=request.message, top_k=5)
-        evidence_list = rag_result.get("evidence", [])
+        evidence_list = retrieve(query=request.message, top_k=5)
 
         # Filter evidence with significant similarity (> 0.40)
         strong_evidence = [e for e in evidence_list if e.get("score", 0.0) >= 0.40]
@@ -21,7 +20,7 @@ class ChatService:
         sources = []
         seen_sources = set()
         for ev in strong_evidence:
-            doc_name = ev.get("source") or ev.get("filename", "unknown.pdf")
+            doc_name = ev.get("source") or ev.get("document_id", "unknown.pdf")
             page_num = ev.get("page", 1)
             key = (doc_name, page_num)
             if key not in seen_sources:
@@ -32,7 +31,7 @@ class ChatService:
             first_ev = strong_evidence[0]
             answer = (
                 f"Based on retrieved document '{first_ev.get('source')}' (Page {first_ev.get('page')}): "
-                f"\"{first_ev.get('text')[:180]}...\""
+                f"\"{first_ev.get('content')[:180]}...\""
             )
         else:
             answer = "This is a mock response from the Sovereign AI Workbench."

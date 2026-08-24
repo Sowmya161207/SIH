@@ -1,7 +1,8 @@
 """
 retriever.py
 ------------
-Retrieval service supporting semantic similarity search and role-based access control (ACL).
+Retrieval service supporting semantic similarity search, document_ids filtering,
+role-based access control (ACL), and exact required output schemas.
 """
 
 import logging
@@ -26,11 +27,11 @@ def _is_accessible(chunk: Dict[str, Any], user_role: Optional[str]) -> bool:
     if isinstance(allowed, str):
         allowed = [allowed]
 
-    return user_role in allowed or "manager" in [user_role]
+    return user_role in allowed or user_role == "manager"
 
 
 class Retriever:
-    """Retriever service executing embedding + similarity search + ACL filtering."""
+    """Retriever service executing embedding + similarity search + ACL & document_ids filtering."""
 
     def __init__(self, store: Optional[VectorStore] = None, embedder: Optional[Embedder] = None):
         self.store = store or VectorStore()
@@ -39,67 +40,52 @@ class Retriever:
     def search(
         self,
         query: str,
+        document_ids: Optional[List[str]] = None,
         user_role: Optional[str] = None,
         top_k: int = settings.DEFAULT_TOP_K,
-    ) -> Dict[str, Any]:
+    ) -> List[Dict[str, Any]]:
         """
-        Execute semantic search for query string.
+        Execute semantic search.
 
-        Returns:
-            {
-                "query": str,
-                "role": str | None,
-                "evidence": [
-                    {
-                        "source": str,
-                        "page": int,
-                        "text": str,
-                        "score": float,
-                        "document_id": str,
-                        "filename": str,
-                        "title": str,
-                        "equipment": str,
-                        "document_type": str,
-                        "classification": str,
-                    }, ...
-                ],
-                "total_found": int,
-                "total_returned": int
-            }
+        Returns list of dicts with exact required schema:
+        [
+          {
+            "content": "...",
+            "document_id": "...",
+            "source": "...",
+            "page": 1,
+            "score": 0.92
+          }
+        ]
         """
         if not query or not query.strip():
-            return {"query": query, "role": user_role, "evidence": [], "total_found": 0, "total_returned": 0}
+            return []
 
         query_vec = self.embedder.embed(query)
-        candidates = self.store.search(query_vec, top_k=top_k * 3)
+        candidates = self.store.search(query_vec, top_k=top_k * 4)
 
+        # 1. Document IDs filter
+        if document_ids:
+            doc_set = set(document_ids)
+            candidates = [c for c in candidates if c.get("document_id") in doc_set]
+
+        # 2. ACL Role filter
         accessible = [c for c in candidates if _is_accessible(c, user_role)]
         evidence_list = accessible[:top_k]
 
-        formatted_evidence = []
+        results = []
         for c in evidence_list:
-            formatted_evidence.append({
-                "source": c.get("filename") or c.get("source_file", "unknown.pdf"),
-                "filename": c.get("filename") or c.get("source_file", "unknown.pdf"),
-                "page": c.get("page", 1),
-                "text": c.get("text", ""),
-                "score": c.get("score", 0.0),
+            results.append({
+                "content": c.get("text", ""),
                 "document_id": c.get("document_id", ""),
-                "title": c.get("title", ""),
-                "equipment": c.get("equipment", "Unknown"),
-                "document_type": c.get("document_type", "general"),
-                "classification": c.get("classification", "internal"),
+                "source": c.get("filename") or c.get("source_file", "unknown.pdf"),
+                "page": c.get("page", 1),
+                "score": float(round(c.get("score", 0.0), 4)),
             })
 
         logger.info(
-            "Query: '%s' | role=%s | found=%d | returned=%d",
-            query, user_role, len(candidates), len(formatted_evidence),
+            "Search query: '%s' | docs_filter=%s | role=%s | returned=%d",
+            query, document_ids, user_role, len(results),
         )
 
-        return {
-            "query": query,
-            "role": user_role,
-            "evidence": formatted_evidence,
-            "total_found": len(candidates),
-            "total_returned": len(formatted_evidence),
-        }
+        return results

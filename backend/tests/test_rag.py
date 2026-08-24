@@ -57,7 +57,7 @@ def test_ingest_and_retrieve_pump_failure():
         file_path=TEST_PDF,
         metadata={
             "filename": TEST_PDF.name,
-            "title": "Incident Report — Pump P-101",
+            "title": "Incident Report - Pump P-101",
             "equipment": "Pump P-101",
             "document_type": "incident",
             "allowed_roles": ["safety_officer", "manager"]
@@ -68,21 +68,20 @@ def test_ingest_and_retrieve_pump_failure():
 
     # Query RAG
     query = "Why did Pump P101 fail?"
-    retrieval_res = retrieve(query, top_k=5)
+    evidence = retrieve(query, top_k=5)
 
-    assert retrieval_res["total_returned"] > 0
-    evidence = retrieval_res["evidence"]
+    assert len(evidence) > 0
 
     # Check evidence structure
     found_relevant = False
     for ev in evidence:
         assert "document_id" in ev
-        assert "filename" in ev
+        assert "source" in ev
         assert "page" in ev
-        assert "text" in ev
+        assert "content" in ev
         assert "score" in ev
 
-        text_lower = ev["text"].lower()
+        text_lower = ev["content"].lower()
         if "bearing" in text_lower or "failure" in text_lower or "seizure" in text_lower or "fire" in text_lower:
             found_relevant = True
 
@@ -109,4 +108,4 @@ async def test_upload_api_triggers_rag_ingestion():
 
         # Retrieve document via RAG
         retrieval = retrieve("troubleshooting bearing temperature", top_k=3)
-        assert retrieval["total_returned"] > 0
+        assert len(retrieval) > 0

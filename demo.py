@@ -24,34 +24,39 @@ async def main():
     chat_service = ChatService()
 
     sample_queries = [
-        ("1. General Question", "What is Python?"),
-        ("2. Text / Document QA", "What is the main topic of the uploaded document?"),
-        ("3. Image / P&ID Diagram Question", "What pump and valve configuration is shown on the P&ID diagram?"),
-        ("4. Multimodal Question", "Compare the valve specifications in the PDF with the P&ID diagram drawing."),
-        ("5. Calculation / Reasoning", "Calculate the pressure drop across the pipe with flow rate 50 m3/h."),
-        ("6. Ambiguous Query", "Tell me more."),
-        ("7. Real-time Web Information", "What are the latest developments in AI?")
+        ("1. Simple Document QA", "What is the zero-trust policy in the uploaded document?"),
+        ("2. Image / P&ID Diagram", "What pump and valve configuration is shown on the P&ID diagram?"),
+        ("3. Maintenance + Analytics", "What is the maintenance status and telemetry for pump P-101?"),
+        ("4. Complex Incident Investigation", "Investigate why Pump P-101 failed and tell me what maintenance action is required."),
+        ("5. Unsupported / Ambiguous Query", "Tell me more."),
+        ("6. No Evidence / Hallucination Guard", "What are the operating limits of nonexistent_equipment_xyz?"),
+        ("7. General Question", "What is Python?")
     ]
 
-
     for label, query in sample_queries:
-        print(f"\n{'=' * 70}")
+        print(f"\n{'=' * 75}")
         print(f">>> [{label}] Query: \"{query}\"")
-        print(f"{'=' * 70}")
+        print(f"{'=' * 75}")
 
         # 1. Direct Planner Contract
-        decision = await planner.plan(query=query, conversation_id="demo-conv-001")
+        decision = await planner.plan(query=query, conversation_id="sih-demo-001")
         print("\n--- [PLANNER DECISION CONTRACT (PlannerResult)] ---")
         print(json.dumps(decision.model_dump(exclude_none=True), indent=2))
 
         # 2. Complete Chat Orchestration
-        request = ChatRequest(message=query, conversation_id="demo-conv-001")
+        request = ChatRequest(message=query, conversation_id="sih-demo-001")
         response = await chat_service.process_chat(request, document_ids=["sovereign_spec.pdf"])
 
         print("\n--- [BACKEND CHAT RESPONSE (ChatResponse)] ---")
-        print(f"Answer:  {response.answer}")
-        print(f"Sources: {[s.model_dump() for s in response.sources]}")
-        print(f"Conv ID: {response.conversation_id}")
+        print(f"Status:     {response.status}")
+        print(f"Confidence: {response.confidence}")
+        print(f"Evidence:   {len(response.evidence)} item(s) verified")
+        print(f"Answer:     {response.answer}")
+        if response.sources:
+            print(f"Sources:    {[s.model_dump() for s in response.sources]}")
+        if response.reason:
+            print(f"Reason:     {response.reason}")
+
 
     print("\n" + "=" * 70)
     print("[SUCCESS] All sample query plans and orchestration flows completed cleanly!")

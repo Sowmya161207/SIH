@@ -249,3 +249,143 @@ def test_regression_source_propagation():
 
     asyncio.run(_run())
 
+
+# ==============================================================================
+# SIH PS 26117 AGENTIC WORKBENCH END-TO-END TEST CASES
+# ==============================================================================
+
+def test_sih_case_1_simple_document_question_rag_agent():
+    """
+    Test Case 1: Simple document question -> RAG Agent.
+    Interacts strictly via search_documents(query, user_role, top_k).
+    """
+    async def _run():
+        service = ChatService()
+        request = ChatRequest(
+            message="What is the zero-trust policy in the uploaded document?",
+            conversation_id="sih-int-001",
+            user_role="engineer"
+        )
+        response: ChatResponse = await service.process_chat(request, document_ids=["security.pdf"])
+
+        assert response.status == "success"
+        assert len(response.sources) > 0
+        assert len(response.evidence) > 0
+        assert any(e.source_type == "document" for e in response.evidence)
+        assert response.confidence >= 0.8
+        assert "zero-trust" in response.answer.lower()
+
+    asyncio.run(_run())
+
+
+def test_sih_case_2_image_question_vision_agent():
+    """
+    Test Case 2: Image / P&ID Diagram Question -> Vision Agent.
+    Analyzes visual diagrams through clean VisionAgent interface.
+    """
+    async def _run():
+        service = ChatService()
+        request = ChatRequest(
+            message="What pump and valve configuration is shown on the P&ID diagram?",
+            conversation_id="sih-int-002"
+        )
+        response: ChatResponse = await service.process_chat(request)
+
+        assert response.status == "success"
+        assert len(response.evidence) > 0
+        assert "p-101" in response.answer.lower()
+        assert "valve" in response.answer.lower()
+
+    asyncio.run(_run())
+
+
+def test_sih_case_3_maintenance_question_rag_plus_analytics():
+    """
+    Test Case 3: Maintenance question -> RAG + Analytics Agent.
+    Combines maintenance manuals with real-time telemetry analytics.
+    """
+    async def _run():
+        service = ChatService()
+        request = ChatRequest(
+            message="What is the maintenance status and telemetry for pump P-101?",
+            conversation_id="sih-int-003"
+        )
+        response: ChatResponse = await service.process_chat(request)
+
+        assert response.status == "success"
+        assert len(response.evidence) >= 2
+        source_types = {e.source_type for e in response.evidence}
+        assert "document" in source_types
+        assert "analytics" in source_types
+        assert "vibration" in response.answer.lower() or "telemetry" in response.answer.lower()
+
+    asyncio.run(_run())
+
+
+def test_sih_case_4_complex_incident_question_multistep_plan():
+    """
+    Test Case 4: Complex incident question -> Multi-step Plan.
+    Decomposes: Incident Log -> Maintenance History -> Equipment Manual -> Telemetry Analytics -> Evidence Verification -> LLM Synthesis.
+    """
+    async def _run():
+        service = ChatService()
+        query = "Investigate why Pump P-101 failed and tell me what maintenance action is required."
+        request = ChatRequest(message=query, conversation_id="sih-int-004")
+        response: ChatResponse = await service.process_chat(request)
+
+        assert response.status == "success"
+        assert response.plan is not None
+        assert response.plan.intent == "incident_investigation"
+        assert len(response.plan.steps) == 6
+        
+        # Verify step tools
+        step_tools = [s.tool for s in response.plan.steps]
+        assert step_tools == ["rag", "rag", "rag", "analytics", "verify", "llm"]
+        
+        # Verify evidence collection
+        assert len(response.evidence) >= 4
+        assert response.confidence >= 0.85
+        assert "root-cause" in response.answer.lower() or "vibration" in response.answer.lower()
+        assert "seal" in response.answer.lower()
+
+    asyncio.run(_run())
+
+
+def test_sih_case_5_unsupported_ambiguous_question_safe_response():
+    """
+    Test Case 5: Unsupported / Ambiguous Question -> Safe Clarification.
+    Fails safely without crashing backend.
+    """
+    async def _run():
+        service = ChatService()
+        request = ChatRequest(message="Tell me more.", conversation_id="sih-int-005")
+        response: ChatResponse = await service.process_chat(request)
+
+        assert response.status == "clarification"
+        assert "clarify" in response.answer.lower()
+        assert len(response.sources) == 0
+
+    asyncio.run(_run())
+
+
+def test_sih_case_6_no_evidence_hallucination_guard():
+    """
+    Test Case 6: No Evidence Found -> Hallucination Guard.
+    Returns explicit uncertainty state ('insufficient_evidence') without hallucinating.
+    """
+    async def _run():
+        service = ChatService()
+        request = ChatRequest(
+            message="What are the operating limits of nonexistent_equipment_xyz?",
+            conversation_id="sih-int-006"
+        )
+        response: ChatResponse = await service.process_chat(request)
+
+        assert response.status == "insufficient_evidence"
+        assert response.confidence == 0.0
+        assert len(response.evidence) == 0
+        assert "no matching evidence" in (response.reason or "").lower() or "insufficient" in response.answer.lower()
+
+    asyncio.run(_run())
+
+

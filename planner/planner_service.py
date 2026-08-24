@@ -121,22 +121,44 @@ class PlannerService:
             intent = execution_plan.intent
 
             # Map intent to SIH PS 26117 task types and capability routing
-            if intent == "multimodal_qa":
+            if intent == "incident_investigation":
+                task_type = "incident_investigation"
+                action = "rag"
+                requires_retrieval = True
+                requires_generation = True
+                requires_text = True
+                requires_image = False
+                requires_analytics = True
+                capability = "reasoning"
+                selected_model = self.model_registry.get("reasoning", "qwen2.5-coder:7b")
+            elif intent == "maintenance_analytics":
+                task_type = "maintenance_analytics"
+                action = "rag"
+                requires_retrieval = True
+                requires_generation = True
+                requires_text = True
+                requires_image = False
+                requires_analytics = True
+                capability = "analytics"
+                selected_model = self.model_registry.get("analytics", "qwen2.5-coder:7b")
+            elif intent == "multimodal_qa":
                 task_type = "multimodal_qa"
                 action = "rag"
                 requires_retrieval = True
                 requires_generation = True
                 requires_text = True
                 requires_image = True
+                requires_analytics = False
                 capability = "multimodal"
                 selected_model = self.model_registry.get("multimodal", "qwen-vl:7b")
             elif intent == "image_qa":
                 task_type = "image_qa"
-                action = "rag"
-                requires_retrieval = True
+                action = "rag" if execution_plan.requires_rag else "direct_llm"
+                requires_retrieval = execution_plan.requires_rag
                 requires_generation = True
                 requires_text = False
                 requires_image = True
+                requires_analytics = False
                 capability = "vision"
                 selected_model = self.model_registry.get("vision", "llava:7b")
             elif intent == "calculation_reasoning":
@@ -146,6 +168,7 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_analytics = False
                 capability = "reasoning"
                 selected_model = self.model_registry.get("reasoning", "qwen2.5-coder:7b")
             elif intent in ("document_qa", "document_summarization", "document_comparison"):
@@ -155,6 +178,7 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_analytics = False
                 capability = "text"
                 selected_model = self.model_registry.get("text", "llama3:8b")
             elif intent == "web_search_qa" or execution_plan.requires_web:
@@ -164,6 +188,7 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_analytics = False
                 capability = "text"
                 selected_model = self.model_registry.get("text", "llama3:8b")
             elif intent == "clarification":
@@ -173,6 +198,7 @@ class PlannerService:
                 requires_generation = False
                 requires_text = False
                 requires_image = False
+                requires_analytics = False
                 capability = "text"
                 selected_model = None
             else:
@@ -182,6 +208,7 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_analytics = False
                 capability = "text"
                 selected_model = self.model_registry.get("text", "llama3:8b")
 
@@ -194,6 +221,7 @@ class PlannerService:
                 requires_generation=requires_generation,
                 requires_text=requires_text,
                 requires_image=requires_image,
+                requires_analytics=requires_analytics,
                 capability=capability,
                 selected_model=selected_model,
                 conversation_id=conversation_id,
@@ -213,6 +241,7 @@ class PlannerService:
                 requires_generation=False,
                 requires_text=False,
                 requires_image=False,
+                requires_analytics=False,
                 capability="text",
                 selected_model=None,
                 conversation_id=conversation_id,
@@ -248,35 +277,33 @@ class PlannerService:
             raise PlannerExecutionError(f"Failed to communicate with planning model: {str(e)}") from e
 
         # 3. Parse JSON from raw output
-        plan_dict = self._extract_json(raw_response)
+        plan_dict = self._parse_json_safely(raw_response)
 
-        # 4. Validate against Pydantic ExecutionPlan schema
+        # 4. Validate through Pydantic Schema
         try:
             plan = ExecutionPlan.model_validate(plan_dict)
         except ValidationError as ve:
-            logger.error(f"ExecutionPlan schema validation error: {ve}", exc_info=True)
-            raise PlannerValidationError(f"Generated plan violates schema: {str(ve)}") from ve
+            logger.error(f"Plan validation failed against ExecutionPlan schema: {ve}")
+            raise PlannerValidationError(f"ExecutionPlan schema validation failed: {ve}") from ve
 
-        # 5. Post-validation checks on plan structure
+        # 5. Validate Domain Invariants
         self._validate_plan_invariants(plan)
 
         return plan
 
-    def _extract_json(self, raw_text: str) -> Dict[str, Any]:
+    def _parse_json_safely(self, raw_text: str) -> Dict[str, Any]:
         """
-        Robustly extracts JSON from an LLM response string, handling markdown fences and extraneous text.
+        Extracts and parses JSON from raw LLM output, discarding markdown code fences
+        or surrounding conversational commentary.
         """
-        if not raw_text or not raw_text.strip():
-            raise PlannerExecutionError("Planning model returned an empty response.")
-
         text = raw_text.strip()
 
-        # Check for ```json ... ``` code fence
-        json_fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
-        if json_fence_match:
-            text = json_fence_match.group(1).strip()
+        # Remove markdown code fences ```json ... ``` or ``` ... ```
+        fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+        if fence_match:
+            text = fence_match.group(1).strip()
 
-        # Extract outer curly braces if extra text exists
+        # Fallback regex to find outermost JSON braces if extra text surrounds JSON
         brace_match = re.search(r"\{[\s\S]*\}", text)
         if brace_match:
             text = brace_match.group(0)
@@ -291,14 +318,14 @@ class PlannerService:
         """
         Verifies domain-specific invariants:
         - Steps must be non-empty and 1-indexed sequential.
-        - Supported tools must be recognized ('rag', 'llm', 'web_search').
+        - Supported tools must be recognized ('rag', 'vision', 'analytics', 'verify', 'llm', 'web_search').
         - Final step must be an 'llm' tool.
         - If requires_rag is True, 'rag' tool must appear before 'llm'.
         """
         if not plan.steps:
             raise PlannerValidationError("ExecutionPlan must contain at least one step.")
 
-        valid_tools = {"rag", "llm", "web_search"}
+        valid_tools = {"rag", "vision", "analytics", "verify", "llm", "web_search"}
         rag_seen = False
 
         for idx, step in enumerate(plan.steps, start=1):

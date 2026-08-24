@@ -9,6 +9,8 @@ from .schemas import (
     ExecutionPlan,
     PlannerResult,
     SourceMetadata,
+    EvidenceItem,
+    VerificationResult,
     RAGChunk,
     RAGResult,
     ChatRequest,
@@ -17,15 +19,22 @@ from .schemas import (
 from .interfaces import (
     BasePlannerLLMClient,
     BaseRAGAgent,
+    BaseVisionAgent,
+    BaseAnalyticsAgent,
+    BaseEvidenceVerifier,
     BaseLLMAgent,
     BaseWebSearchAgent
 )
 from .adapters import (
     MockPlannerLLMClient,
     MockRAGAgent,
+    MockVisionAgent,
+    MockAnalyticsAgent,
+    MockEvidenceVerifier,
     MockLLMAgent,
     MockWebSearchAgent
 )
+
 from .planner_service import (
     PlannerService,
     PlannerServiceError,
@@ -46,16 +55,24 @@ __all__ = [
     "ExecutionPlan",
     "PlannerResult",
     "SourceMetadata",
+    "EvidenceItem",
+    "VerificationResult",
     "RAGChunk",
     "RAGResult",
     "ChatRequest",
     "ChatResponse",
     "BasePlannerLLMClient",
     "BaseRAGAgent",
+    "BaseVisionAgent",
+    "BaseAnalyticsAgent",
+    "BaseEvidenceVerifier",
     "BaseLLMAgent",
     "BaseWebSearchAgent",
     "MockPlannerLLMClient",
     "MockRAGAgent",
+    "MockVisionAgent",
+    "MockAnalyticsAgent",
+    "MockEvidenceVerifier",
     "MockLLMAgent",
     "MockWebSearchAgent",
     "PlannerService",
@@ -68,3 +85,4 @@ __all__ = [
     "PLANNER_SYSTEM_PROMPT",
     "build_planner_prompt"
 ]
+

@@ -153,12 +153,24 @@ def analyze_sensor_data(
         "latest_events": anomaly_results["latest_events"],
     }
 
+    # Latest sensor metrics
+    latest_metrics: Dict[str, float] = {}
+    last_row = df_clean.iloc[-1]
+    for col in SENSOR_COLUMNS:
+        if col in last_row and pd.notna(last_row[col]):
+            latest_metrics[col] = round(float(last_row[col]), 2)
+
     # 6. Assemble Final Analytics Output
     output: Dict[str, Any] = {
         "equipment": equipment_id,
+        "equipment_id": equipment_id,
         "health_score": health_results["health_score"],
+        "status": health_results.get("status", "healthy"),
         "risk_level": health_results["risk_level"],
         "risk_description": health_results["risk_description"],
+        "issues": health_results.get("issues", []),
+        "metrics": latest_metrics,
+        "recommendations": health_results.get("recommendations", []),
         "health_breakdown": {
             "sensor_subscores": health_results["sensor_subscores"],
             "primary_drivers": health_results["primary_drivers"],

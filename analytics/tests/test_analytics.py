@@ -117,12 +117,16 @@ class TestPumpP101Analytics(unittest.TestCase):
         deg_health = compute_health_index(deg_res)
         self.assertLess(deg_health["health_score"], 60.0)
         self.assertIn(deg_health["risk_level"], ["high", "critical"])
+        self.assertIn(deg_health["status"], ["warning", "critical"])
+        self.assertIsInstance(deg_health["issues"], list)
+        self.assertIsInstance(deg_health["recommendations"], list)
 
         # Healthy dataset must yield high health score and low risk
         healthy_res = run_anomaly_pipeline(validate_and_prepare_data(self.healthy_df))
         healthy_health = compute_health_index(healthy_res)
         self.assertGreaterEqual(healthy_health["health_score"], 85.0)
         self.assertEqual(healthy_health["risk_level"], "low")
+        self.assertEqual(healthy_health["status"], "healthy")
 
     def test_07_analyze_sensor_data_full_output_contract(self):
         """Verify analyze_sensor_data returns exact required structure and is JSON-serializable."""
@@ -131,8 +135,13 @@ class TestPumpP101Analytics(unittest.TestCase):
         # Check top-level keys
         expected_keys = [
             "equipment",
+            "equipment_id",
             "health_score",
+            "status",
             "risk_level",
+            "issues",
+            "metrics",
+            "recommendations",
             "anomalies",
             "trends",
             "chart_data",
@@ -143,7 +152,11 @@ class TestPumpP101Analytics(unittest.TestCase):
 
         self.assertEqual(result["equipment"], "Pump P-101")
         self.assertIsInstance(result["health_score"], float)
+        self.assertIn(result["status"], ["healthy", "warning", "critical"])
         self.assertIn(result["risk_level"], ["low", "medium", "high", "critical"])
+        self.assertIsInstance(result["issues"], list)
+        self.assertIsInstance(result["metrics"], dict)
+        self.assertIsInstance(result["recommendations"], list)
         self.assertIsInstance(result["chart_data"], list)
         self.assertGreater(len(result["chart_data"]), 0)
 

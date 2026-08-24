@@ -10,6 +10,7 @@ Provides callable industrial intelligence tools for the Planner:
 """
 
 from analytics.main import analyze_sensor_data
+from analytics.service import EquipmentHealthService, get_equipment_health
 from analytics.intelligence import (
     analyze_equipment,
     investigate_incident,
@@ -21,6 +22,10 @@ from analytics.config import (
     SENSOR_THRESHOLDS,
     HEALTH_WEIGHTS,
     SYSTEM_LIMITATIONS,
+    STATUS_HEALTHY,
+    STATUS_WARNING,
+    STATUS_CRITICAL,
+    EQUIPMENT_STATUS_OPTIONS,
 )
 
 __all__ = [
@@ -29,8 +34,14 @@ __all__ = [
     "investigate_incident",
     "predict_maintenance_risk",
     "generate_pump_p101_data",
+    "EquipmentHealthService",
+    "get_equipment_health",
     "DEFAULT_EQUIPMENT_ID",
     "SENSOR_THRESHOLDS",
     "HEALTH_WEIGHTS",
     "SYSTEM_LIMITATIONS",
+    "STATUS_HEALTHY",
+    "STATUS_WARNING",
+    "STATUS_CRITICAL",
+    "EQUIPMENT_STATUS_OPTIONS",
 ]

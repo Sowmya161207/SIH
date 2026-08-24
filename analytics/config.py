@@ -9,6 +9,12 @@ from typing import Dict, Any
 # Target Equipment
 DEFAULT_EQUIPMENT_ID: str = "Pump P-101"
 
+# Equipment Operational Status
+STATUS_HEALTHY: str = "healthy"
+STATUS_WARNING: str = "warning"
+STATUS_CRITICAL: str = "critical"
+EQUIPMENT_STATUS_OPTIONS = [STATUS_HEALTHY, STATUS_WARNING, STATUS_CRITICAL]
+
 # Required Columns in Sensor Telemetry
 REQUIRED_COLUMNS = [
     "timestamp",

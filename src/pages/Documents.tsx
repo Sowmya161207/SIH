@@ -1,5 +1,6 @@
 import React from 'react';
 import { UploadZone } from '../components/documents/UploadZone';
+import { TextInputZone } from '../components/documents/TextInputZone';
 import { DocumentList } from '../components/documents/DocumentList';
 import { DocumentResponse } from '../types/documents';
 
@@ -11,6 +12,11 @@ interface DocumentsProps {
   uploadSuccess: boolean;
   clearUploadState: () => void;
   removeDocument: (id: string) => void;
+  submitText: (title: string, text: string) => Promise<any>;
+  isUploadingText: boolean;
+  uploadTextError: string | null;
+  uploadTextSuccess: boolean;
+  clearUploadTextState: () => void;
 }
 
 export const Documents: React.FC<DocumentsProps> = ({
@@ -21,6 +27,11 @@ export const Documents: React.FC<DocumentsProps> = ({
   uploadSuccess,
   clearUploadState,
   removeDocument,
+  submitText,
+  isUploadingText,
+  uploadTextError,
+  uploadTextSuccess,
+  clearUploadTextState,
 }) => {
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -31,13 +42,23 @@ export const Documents: React.FC<DocumentsProps> = ({
         </p>
       </div>
 
-      <UploadZone
-        onUpload={uploadFile}
-        isUploading={isUploading}
-        uploadError={uploadError}
-        uploadSuccess={uploadSuccess}
-        clearUploadState={clearUploadState}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <UploadZone
+          onUpload={uploadFile}
+          isUploading={isUploading}
+          uploadError={uploadError}
+          uploadSuccess={uploadSuccess}
+          clearUploadState={clearUploadState}
+        />
+
+        <TextInputZone
+          onSubmitText={submitText}
+          isSubmitting={isUploadingText}
+          submitError={uploadTextError}
+          submitSuccess={uploadTextSuccess}
+          clearSubmitState={clearUploadTextState}
+        />
+      </div>
 
       <div className="pt-4 border-t border-[#1e293b]">
         <div className="flex items-center justify-between mb-4">

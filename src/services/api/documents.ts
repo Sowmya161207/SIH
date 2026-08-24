@@ -30,6 +30,23 @@ export const uploadDocument = async (file: File): Promise<DocumentResponse> => {
   }
 };
 
+// MOCK ADAPTER for Direct Text Ingestion
+// TODO: Replace with actual axios call when the backend supports a text ingestion endpoint.
+// It currently simulates a successful submission and returns a DocumentResponse to be tracked.
+export const uploadText = async (title: string, text: string): Promise<DocumentResponse> => {
+  // Simulate network delay
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+  // Return a mock DocumentResponse representing the text submission
+  return {
+    document_id: `txt-${crypto.randomUUID()}`,
+    filename: `${title.trim() || 'Untitled'}.txt`,
+    status: 'processing', // Starts in processing
+    size_bytes: new Blob([text]).size,
+    created_at: new Date().toISOString(),
+  };
+};
+
 export const getDocumentStatus = async (documentId: string): Promise<DocumentResponse> => {
   try {
     const response = await axios.get<DocumentResponse>(

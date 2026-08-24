@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { DocumentResponse } from '../types/documents';
-import { uploadDocument, getDocumentStatus } from '../services/api/documents';
+import { uploadDocument, uploadText, getDocumentStatus } from '../services/api/documents';
 
 export const useDocuments = () => {
   const [documents, setDocuments] = useState<DocumentResponse[]>(() => {
@@ -10,6 +10,10 @@ export const useDocuments = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  
+  const [isUploadingText, setIsUploadingText] = useState(false);
+  const [uploadTextError, setUploadTextError] = useState<string | null>(null);
+  const [uploadTextSuccess, setUploadTextSuccess] = useState(false);
 
   // Sync to local storage
   useEffect(() => {
@@ -73,6 +77,39 @@ export const useDocuments = () => {
     }
   };
 
+  const submitText = async (title: string, text: string) => {
+    setIsUploadingText(true);
+    setUploadTextError(null);
+    setUploadTextSuccess(false);
+
+    try {
+      const doc = await uploadText(title, text);
+      setDocuments((prevDocs) => [doc, ...prevDocs]);
+      setUploadTextSuccess(true);
+
+      // Mock processing to simulate backend delay for mock responses
+      if (doc.document_id.startsWith('txt-')) {
+        setTimeout(() => {
+          setDocuments((prevDocs) =>
+            prevDocs.map((d) =>
+              d.document_id === doc.document_id ? { ...d, status: 'completed' } : d
+            )
+          );
+        }, 5000);
+      } else {
+        if (doc.status === 'uploaded' || doc.status === 'processing') {
+          pollDocumentStatus(doc.document_id);
+        }
+      }
+      return doc;
+    } catch (error: any) {
+      setUploadTextError(error.message || 'Text submission failed');
+      throw error;
+    } finally {
+      setIsUploadingText(false);
+    }
+  };
+
   const removeDocument = (documentId: string) => {
     setDocuments((prevDocs) => prevDocs.filter((d) => d.document_id !== documentId));
   };
@@ -83,10 +120,18 @@ export const useDocuments = () => {
     uploadError,
     uploadSuccess,
     uploadFile,
+    isUploadingText,
+    uploadTextError,
+    uploadTextSuccess,
+    submitText,
     removeDocument,
     clearUploadState: () => {
       setUploadError(null);
       setUploadSuccess(false);
+    },
+    clearUploadTextState: () => {
+      setUploadTextError(null);
+      setUploadTextSuccess(false);
     },
   };
 };

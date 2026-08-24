@@ -44,6 +44,11 @@ function App() {
             uploadSuccess={docState.uploadSuccess}
             clearUploadState={docState.clearUploadState}
             removeDocument={docState.removeDocument}
+            submitText={docState.submitText}
+            isUploadingText={docState.isUploadingText}
+            uploadTextError={docState.uploadTextError}
+            uploadTextSuccess={docState.uploadTextSuccess}
+            clearUploadTextState={docState.clearUploadTextState}
           />
         );
       case 'chat':

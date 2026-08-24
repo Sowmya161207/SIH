@@ -39,7 +39,8 @@ from .planner_service import (
     PlannerService,
     PlannerServiceError,
     PlannerValidationError,
-    PlannerExecutionError
+    PlannerExecutionError,
+    plan_query
 )
 from .orchestrator import (
     Orchestrator,
@@ -79,6 +80,7 @@ __all__ = [
     "PlannerServiceError",
     "PlannerValidationError",
     "PlannerExecutionError",
+    "plan_query",
     "Orchestrator",
     "OrchestrationError",
     "ChatService",

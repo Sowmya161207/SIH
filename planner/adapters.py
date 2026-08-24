@@ -55,56 +55,91 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 2. Complex Incident Investigation (e.g. Pump P-101 failure investigation with root-cause & maintenance)
-        elif ("investigate" in lower_query or "root cause" in lower_query or "why" in lower_query) and \
-             ("fail" in lower_query or "tripped" in lower_query or "breakdown" in lower_query or "incident" in lower_query) and \
-             ("pump" in lower_query or "p-101" in lower_query or "equipment" in lower_query or "compressor" in lower_query or "valve" in lower_query):
-            plan_dict = {
-                "intent": "incident_investigation",
-                "requires_rag": True,
-                "requires_web": False,
-                "steps": [
-                    {
-                        "step": 1,
-                        "tool": "rag",
-                        "action": "retrieve",
-                        "input": f"{clean_query} - incident report and alarm logs"
-                    },
-                    {
-                        "step": 2,
-                        "tool": "rag",
-                        "action": "retrieve",
-                        "input": f"{clean_query} - maintenance history and inspection logs"
-                    },
-                    {
-                        "step": 3,
-                        "tool": "rag",
-                        "action": "retrieve",
-                        "input": f"{clean_query} - equipment operating manual and limits"
-                    },
-                    {
-                        "step": 4,
-                        "tool": "analytics",
-                        "action": "analytics",
-                        "input": "P-101 telemetry vibration, temperature, and pressure anomaly analysis"
-                    },
-                    {
-                        "step": 5,
-                        "tool": "verify",
-                        "action": "verify",
-                        "input": "Verify evidence grounding across incident logs, manuals, and sensor telemetry."
-                    },
-                    {
-                        "step": 6,
-                        "tool": "llm",
-                        "action": "synthesize",
-                        "input": "Synthesize comprehensive root-cause failure analysis and required maintenance actions."
-                    }
-                ]
-            }
+        # 2. Complex Multi-Tool Risk / Incident / Root-Cause Investigation (RAG + Analytics + Verify + LLM)
+        # e.g., "Why is Pump P-101 at risk and what should we do?", "Investigate why Pump P-101 failed..."
+        elif ("investigate" in lower_query or "root cause" in lower_query or "why" in lower_query or "risk" in lower_query or "what should we do" in lower_query) and \
+             ("fail" in lower_query or "tripped" in lower_query or "breakdown" in lower_query or "incident" in lower_query or "risk" in lower_query or "danger" in lower_query or "alarm" in lower_query) and \
+             ("pump" in lower_query or "p-101" in lower_query or "equipment" in lower_query or "compressor" in lower_query or "valve" in lower_query or "asset" in lower_query):
+            if "investigate" in lower_query and ("incident" in lower_query or "tripped" in lower_query or "failed" in lower_query or "breakdown" in lower_query):
+                plan_dict = {
+                    "intent": "incident_investigation",
+                    "requires_rag": True,
+                    "requires_web": False,
+                    "steps": [
+                        {
+                            "step": 1,
+                            "tool": "rag",
+                            "action": "retrieve",
+                            "input": f"{clean_query} - incident report and alarm logs"
+                        },
+                        {
+                            "step": 2,
+                            "tool": "rag",
+                            "action": "retrieve",
+                            "input": f"{clean_query} - maintenance history and inspection logs"
+                        },
+                        {
+                            "step": 3,
+                            "tool": "rag",
+                            "action": "retrieve",
+                            "input": f"{clean_query} - equipment operating manual and limits"
+                        },
+                        {
+                            "step": 4,
+                            "tool": "analytics",
+                            "action": "analytics",
+                            "input": "P-101 telemetry vibration, temperature, and pressure anomaly analysis"
+                        },
+                        {
+                            "step": 5,
+                            "tool": "verify",
+                            "action": "verify",
+                            "input": "Verify evidence grounding across incident logs, manuals, and sensor telemetry."
+                        },
+                        {
+                            "step": 6,
+                            "tool": "llm",
+                            "action": "synthesize",
+                            "input": "Synthesize comprehensive root-cause failure analysis and required maintenance actions."
+                        }
+                    ]
+                }
+            else:
+                # e.g., "Why is Pump P-101 at risk and what should we do?"
+                plan_dict = {
+                    "intent": "incident_investigation",
+                    "requires_rag": True,
+                    "requires_web": False,
+                    "steps": [
+                        {
+                            "step": 1,
+                            "tool": "rag",
+                            "action": "retrieve",
+                            "input": f"{clean_query} - operating limits, manuals, and maintenance history"
+                        },
+                        {
+                            "step": 2,
+                            "tool": "analytics",
+                            "action": "analytics",
+                            "input": f"{clean_query} - real-time vibration and telemetry anomalies"
+                        },
+                        {
+                            "step": 3,
+                            "tool": "verify",
+                            "action": "verify",
+                            "input": "Verify evidence grounding across operating limits and telemetry sensor readings."
+                        },
+                        {
+                            "step": 4,
+                            "tool": "llm",
+                            "action": "synthesize",
+                            "input": "Synthesize risk factors, failure mode analysis, and recommended maintenance actions."
+                        }
+                    ]
+                }
         # 3. Maintenance Analytics Question (RAG + Telemetry Analytics)
-        elif ("maintenance" in lower_query or "telemetry" in lower_query or "vibration" in lower_query or "bearing" in lower_query or "health" in lower_query) and \
-             any(k in lower_query for k in ["p-101", "pump", "compressor", "c-200", "motor", "status", "schedule", "sensor"]):
+        # e.g., "What is the maintenance status and telemetry for pump P-101?"
+        elif "maintenance" in lower_query and any(k in lower_query for k in ["p-101", "pump", "compressor", "c-200", "motor", "status", "schedule", "sensor", "telemetry", "vibration", "bearing", "health"]):
             plan_dict = {
                 "intent": "maintenance_analytics",
                 "requires_rag": True,
@@ -136,7 +171,30 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 4. Multimodal QA (cross-referencing document text/specs AND P&ID/diagrams/images)
+        # 4. Pure Telemetry / Abnormal vibration / Sensor status (Analytics)
+        # e.g., "Is Pump P-101 showing abnormal vibration?"
+        elif any(v in lower_query for v in ["abnormal vibration", "showing abnormal", "sensor reading", "vibration reading", "telemetry reading", "bearing temp", "sensor anomaly", "vibration spike", "abnormal"]) or \
+             (any(s in lower_query for s in ["vibration", "temperature", "telemetry", "sensor", "rpm", "pressure reading"]) and not any(d in lower_query for d in ["sop", "manual", "history", "report", "incident", "procedure", "why", "risk", "what should we do", "compare", "maintenance"])):
+            plan_dict = {
+                "intent": "analytics_qa",
+                "requires_rag": False,
+                "requires_web": False,
+                "steps": [
+                    {
+                        "step": 1,
+                        "tool": "analytics",
+                        "action": "analytics",
+                        "input": clean_query
+                    },
+                    {
+                        "step": 2,
+                        "tool": "llm",
+                        "action": "synthesize",
+                        "input": "Synthesize sensor telemetry data, threshold checks, and current operating condition."
+                    }
+                ]
+            }
+        # 5. Multimodal QA (cross-referencing document text/specs AND P&ID/diagrams/images)
         elif any(img in lower_query for img in ["p&id", "pid", "diagram", "drawing", "schematic", "image", "blueprint"]) and \
              re.search(r"\b(document|documents|pdf|specification|specifications|specs|report|reports|text|manual|datasheet|compare)\b", lower_query):
             plan_dict = {
@@ -170,7 +228,8 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 5. Image / P&ID QA (Visual inspection of diagrams, blueprints, piping & instrumentation drawings)
+        # 6. Image / P&ID QA (Visual inspection of diagrams, blueprints, piping & instrumentation drawings)
+        # e.g., "What valve is connected to the inlet line in the P&ID diagram?", "What is shown in this P&ID?"
         elif any(img in lower_query for img in ["p&id", "pid", "piping and instrumentation", "diagram", "blueprint", "schematic", "drawing", "flowsheet", "valve symbol", "image", "photo", "tag number", "instrument loop"]):
             plan_dict = {
                 "intent": "image_qa",
@@ -191,7 +250,7 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 6. Calculation / Quantitative Reasoning
+        # 7. Calculation / Quantitative Reasoning
         elif any(k in lower_query for k in ["calculate", "compute", "formula", "flow rate", "pressure drop", "mass balance", "heat duty", "unit conversion", "math", "equation", "solve for", "derive"]):
             requires_rag = any(doc in lower_query for doc in ["document", "pdf", "uploaded", "file", "table", "datasheet"])
             steps = []
@@ -221,7 +280,7 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                 "requires_web": False,
                 "steps": steps
             }
-        # 7. Document comparison
+        # 8. Document comparison
         elif "compare" in lower_query and ("document" in lower_query or "pdf" in lower_query or "architecture" in lower_query or "uploaded" in lower_query):
             plan_dict = {
                 "intent": "document_comparison",
@@ -242,7 +301,7 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 8. Document summarization
+        # 9. Document summarization
         elif "summarize" in lower_query or "summary" in lower_query:
             plan_dict = {
                 "intent": "document_summarization",
@@ -263,8 +322,9 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 9. Document Q&A (uploaded / pdf / document / security mechanisms / policy / equipment / manual / spec / etc.)
-        elif any(k in lower_query for k in ["pdf", "document", "uploaded", "file", "security mechanism", "policy", "report", "manual", "spec", "specification", "limit", "operating", "procedure", "datasheet", "standard", "equipment"]):
+        # 10. Document SOP / Manual / Policy / Specifications / Q&A
+        # e.g., "What does the Pump P-101 SOP say?"
+        elif any(k in lower_query for k in ["sop", "standard operating procedure", "pdf", "document", "uploaded", "file", "security mechanism", "policy", "report", "manual", "spec", "specification", "limit", "operating", "procedure", "datasheet", "standard", "equipment"]):
             plan_dict = {
                 "intent": "document_qa",
                 "requires_rag": True,
@@ -284,8 +344,7 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-
-        # 10. Web Search
+        # 11. Web Search
         elif any(k in lower_query for k in ["latest", "current", "news", "today", "recent development", "web"]):
             plan_dict = {
                 "intent": "web_search_qa",
@@ -306,7 +365,7 @@ class MockPlannerLLMClient(BasePlannerLLMClient):
                     }
                 ]
             }
-        # 11. General Knowledge QA
+        # 12. General Knowledge QA
         else:
             plan_dict = {
                 "intent": "general_qa",

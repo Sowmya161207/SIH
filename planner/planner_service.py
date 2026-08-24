@@ -6,7 +6,7 @@ parsing JSON responses safely, and validating ExecutionPlan Pydantic models.
 import json
 import re
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import ValidationError
 
 import os
@@ -66,17 +66,22 @@ class PlannerService:
     async def plan(
         self,
         query: str,
-        conversation_id: Optional[str] = None
+        conversation_id: Optional[str] = None,
+        user_context: Optional[Dict[str, Any]] = None,
+        available_tools: Optional[List[str]] = None
     ) -> PlannerResult:
         """
         Primary entry point for Backend integration (POST /api/chat).
-        Evaluates the user query and returns a structured PlannerResult with task classification,
-        modality requirements, and model capability routing.
+        Evaluates the user query and returns a structured PlannerResult with query classification,
+        tool selection, modality requirements, explainable reasons, and model capability routing.
 
         :param query: Natural language user query.
         :param conversation_id: Optional conversation tracking ID.
-        :return: Structured PlannerResult containing action, task_type, requires_text, requires_image,
-                 retrieval_required, selected_model, and granular execution steps.
+        :param user_context: Optional workspace/user context (e.g., user_role, allowed_documents).
+        :param available_tools: Optional list of currently online/available tools for fallback handling.
+        :return: Structured PlannerResult containing action, task_type, requires_retrieval,
+                 requires_analytics, requires_vision, requires_generation, selected_tools,
+                 reason, and granular execution steps.
         """
         # Guard: Empty or whitespace query (fail safely)
         if not query or not query.strip():
@@ -86,12 +91,16 @@ class PlannerService:
                 query=query or "",
                 requires_retrieval=False,
                 retrieval_required=False,
+                requires_analytics=False,
+                requires_vision=False,
                 requires_generation=False,
                 requires_text=False,
                 requires_image=False,
                 capability="text",
                 selected_model=None,
+                selected_tools=[],
                 conversation_id=conversation_id,
+                user_context=user_context,
                 reason="Query is empty or whitespace only. Please provide a clear question or instruction."
             )
 
@@ -99,7 +108,7 @@ class PlannerService:
         lower_query = cleaned_query.lower()
 
         # Guard: Immediate clarification for ambiguous or underspecified queries
-        ambiguous_phrases = {"tell me more", "tell me more.", "explain more", "more details", "what?", "why?", "tell me", "clarify", "more", "details"}
+        ambiguous_phrases = {"tell me more", "tell me more.", "explain more", "more details", "what?", "why?", "tell me", "clarify", "more", "details", "help me"}
         if lower_query in ambiguous_phrases or lower_query.rstrip("?.!") in ambiguous_phrases:
             return PlannerResult(
                 action="clarification",
@@ -107,12 +116,16 @@ class PlannerService:
                 query=cleaned_query,
                 requires_retrieval=False,
                 retrieval_required=False,
+                requires_analytics=False,
+                requires_vision=False,
                 requires_generation=False,
                 requires_text=False,
                 requires_image=False,
                 capability="text",
                 selected_model=None,
+                selected_tools=[],
                 conversation_id=conversation_id,
+                user_context=user_context,
                 reason="Query is ambiguous or underspecified; requires clarification before execution."
             )
 
@@ -120,47 +133,70 @@ class PlannerService:
             execution_plan = await self.create_plan(cleaned_query)
             intent = execution_plan.intent
 
+            # Extract list of tools from steps
+            selected_tools = [step.tool for step in execution_plan.steps]
+
             # Map intent to SIH PS 26117 task types and capability routing
             if intent == "incident_investigation":
                 task_type = "incident_investigation"
-                action = "rag"
+                action = "rag" if execution_plan.requires_rag else "analytics"
                 requires_retrieval = True
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_vision = False
                 requires_analytics = True
                 capability = "reasoning"
                 selected_model = self.model_registry.get("reasoning", "qwen2.5-coder:7b")
+                reason = "Complex question requiring cross-referencing document procedures with telemetry analytics."
             elif intent == "maintenance_analytics":
                 task_type = "maintenance_analytics"
-                action = "rag"
+                action = "rag" if execution_plan.requires_rag else "analytics"
                 requires_retrieval = True
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_vision = False
                 requires_analytics = True
                 capability = "analytics"
                 selected_model = self.model_registry.get("analytics", "qwen2.5-coder:7b")
+                reason = "Question requires cross-referencing maintenance manuals with real-time telemetry analytics."
+            elif intent == "analytics_qa":
+                task_type = "analytics_qa"
+                action = "analytics"
+                requires_retrieval = False
+                requires_generation = True
+                requires_text = False
+                requires_image = False
+                requires_vision = False
+                requires_analytics = True
+                capability = "analytics"
+                selected_model = self.model_registry.get("analytics", "qwen2.5-coder:7b")
+                reason = "Question requires real-time telemetry sensor analysis for vibration/temperature anomalies."
             elif intent == "multimodal_qa":
                 task_type = "multimodal_qa"
-                action = "rag"
+                action = "rag" if execution_plan.requires_rag else "vision"
                 requires_retrieval = True
                 requires_generation = True
                 requires_text = True
                 requires_image = True
+                requires_vision = True
                 requires_analytics = False
                 capability = "multimodal"
                 selected_model = self.model_registry.get("multimodal", "qwen-vl:7b")
-            elif intent == "image_qa":
-                task_type = "image_qa"
-                action = "rag" if execution_plan.requires_rag else "direct_llm"
+                reason = "Question requires cross-referencing document text with visual P&ID diagrams."
+            elif intent in ("vision_qa", "image_qa"):
+                task_type = intent
+                action = "rag" if execution_plan.requires_rag else "vision"
                 requires_retrieval = execution_plan.requires_rag
                 requires_generation = True
                 requires_text = False
                 requires_image = True
+                requires_vision = True
                 requires_analytics = False
                 capability = "vision"
                 selected_model = self.model_registry.get("vision", "llava:7b")
+                reason = "Question requires visual analysis of P&ID engineering diagrams and schematics."
             elif intent == "calculation_reasoning":
                 task_type = "calculation_reasoning"
                 action = "rag" if execution_plan.requires_rag else "direct_llm"
@@ -168,9 +204,11 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_vision = False
                 requires_analytics = False
                 capability = "reasoning"
                 selected_model = self.model_registry.get("reasoning", "qwen2.5-coder:7b")
+                reason = "Question requires quantitative calculation and mathematical reasoning."
             elif intent in ("document_qa", "document_summarization", "document_comparison"):
                 task_type = intent
                 action = "rag"
@@ -178,9 +216,11 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_vision = False
                 requires_analytics = False
                 capability = "text"
                 selected_model = self.model_registry.get("text", "llama3:8b")
+                reason = "Question requires information from company documents (SOP/manuals)."
             elif intent == "web_search_qa" or execution_plan.requires_web:
                 task_type = "web_search_qa"
                 action = "web_search"
@@ -188,9 +228,11 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_vision = False
                 requires_analytics = False
                 capability = "text"
                 selected_model = self.model_registry.get("text", "llama3:8b")
+                reason = "Question requires current public web search information."
             elif intent == "clarification":
                 task_type = "clarification"
                 action = "clarification"
@@ -198,9 +240,11 @@ class PlannerService:
                 requires_generation = False
                 requires_text = False
                 requires_image = False
+                requires_vision = False
                 requires_analytics = False
                 capability = "text"
                 selected_model = None
+                reason = "Question is ambiguous or underspecified; requires clarification before execution."
             else:
                 task_type = "general_qa"
                 action = "direct_llm"
@@ -208,9 +252,26 @@ class PlannerService:
                 requires_generation = True
                 requires_text = True
                 requires_image = False
+                requires_vision = False
                 requires_analytics = False
                 capability = "text"
                 selected_model = self.model_registry.get("text", "llama3:8b")
+                reason = "Question can be answered directly using general knowledge and engineering principles without private tools."
+
+            # Fallback handling when a requested tool is unavailable in deployment
+            fallback_action = None
+            if available_tools is not None:
+                unavailable = [t for t in selected_tools if t not in available_tools and t not in ("llm", "verify")]
+                if unavailable:
+                    fallback_action = "direct_llm"
+                    reason += f" (Note: Requested tool(s) {unavailable} unavailable; fallback to direct LLM activated.)"
+                    if "rag" in unavailable:
+                        requires_retrieval = False
+                    if "analytics" in unavailable:
+                        requires_analytics = False
+                    if "vision" in unavailable:
+                        requires_vision = False
+                        requires_image = False
 
             return PlannerResult(
                 action=action,
@@ -218,14 +279,18 @@ class PlannerService:
                 query=cleaned_query,
                 requires_retrieval=requires_retrieval,
                 retrieval_required=requires_retrieval,
+                requires_analytics=requires_analytics,
+                requires_vision=requires_vision,
                 requires_generation=requires_generation,
+                selected_tools=selected_tools,
                 requires_text=requires_text,
                 requires_image=requires_image,
-                requires_analytics=requires_analytics,
                 capability=capability,
                 selected_model=selected_model,
                 conversation_id=conversation_id,
-                reason=f"Plan generated for intent: '{execution_plan.intent}'",
+                user_context=user_context,
+                reason=reason,
+                fallback_action=fallback_action,
                 steps=execution_plan.steps
             )
 
@@ -238,13 +303,16 @@ class PlannerService:
                 query=cleaned_query,
                 requires_retrieval=False,
                 retrieval_required=False,
+                requires_analytics=False,
+                requires_vision=False,
                 requires_generation=False,
                 requires_text=False,
                 requires_image=False,
-                requires_analytics=False,
+                selected_tools=[],
                 capability="text",
                 selected_model=None,
                 conversation_id=conversation_id,
+                user_context=user_context,
                 reason=f"Unable to determine unambiguous plan: {str(e)}"
             )
 
@@ -342,3 +410,34 @@ class PlannerService:
         # Ensure requires_rag consistency
         if plan.requires_rag and not rag_seen:
             raise PlannerValidationError("Plan specifies requires_rag=True but contains no RAG step.")
+
+
+# Standalone singleton instance for convenient functional usage
+_default_planner_service = PlannerService()
+
+
+async def plan_query(
+    query: str,
+    conversation_id: Optional[str] = None,
+    user_context: Optional[Dict[str, Any]] = None,
+    available_tools: Optional[List[str]] = None,
+    planner_service: Optional[PlannerService] = None
+) -> PlannerResult:
+    """
+    Simple function API for Backend Engineers to invoke the planner directly.
+
+    :param query: Natural language user query.
+    :param conversation_id: Optional conversation session tracking ID.
+    :param user_context: Optional workspace/user context dict (user_role, allowed_documents, etc.).
+    :param available_tools: Optional list of available tools (e.g. ['rag', 'analytics', 'vision', 'llm']).
+    :param planner_service: Optional custom PlannerService instance.
+    :return: Structured PlannerResult contract.
+    """
+    service = planner_service or _default_planner_service
+    return await service.plan(
+        query=query,
+        conversation_id=conversation_id,
+        user_context=user_context,
+        available_tools=available_tools
+    )
+

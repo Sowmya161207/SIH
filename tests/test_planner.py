@@ -414,3 +414,137 @@ def test_task_routing_safe_failure_on_invalid_input():
     asyncio.run(_run())
 
 
+# ==============================================================================
+# SIH 26117 SPECIFIC EXAMPLES & DECISION CONTRACT TESTS
+# ==============================================================================
+
+def test_sih_example_1_pump_sop_query():
+    """
+    Example 1: 'What does the Pump P-101 SOP say?'
+    Expected: action='rag', requires_retrieval=True, requires_analytics=False,
+              requires_vision=False, requires_generation=True, explainable reason.
+    """
+    async def _run():
+        from planner import plan_query
+        decision = await plan_query("What does the Pump P-101 SOP say?", conversation_id="conv-sop")
+
+        assert decision.action == "rag"
+        assert decision.requires_retrieval is True
+        assert decision.requires_analytics is False
+        assert decision.requires_vision is False
+        assert decision.requires_generation is True
+        assert decision.task_type == "document_qa"
+        assert "rag" in decision.selected_tools
+        assert "llm" in decision.selected_tools
+        assert "SOP" in decision.reason or "documents" in decision.reason
+
+    asyncio.run(_run())
+
+
+def test_sih_example_2_abnormal_vibration_query():
+    """
+    Example 2: 'Is Pump P-101 showing abnormal vibration?'
+    Expected: action='analytics', requires_retrieval=False, requires_analytics=True,
+              requires_vision=False, requires_generation=True, explainable reason.
+    """
+    async def _run():
+        from planner import plan_query
+        decision = await plan_query("Is Pump P-101 showing abnormal vibration?", conversation_id="conv-vib")
+
+        assert decision.action == "analytics"
+        assert decision.requires_analytics is True
+        assert decision.requires_retrieval is False
+        assert decision.requires_vision is False
+        assert decision.requires_generation is True
+        assert decision.task_type == "analytics_qa"
+        assert "analytics" in decision.selected_tools
+        assert "vibration" in decision.reason or "telemetry" in decision.reason
+
+    asyncio.run(_run())
+
+
+def test_sih_example_3_pid_diagram_query():
+    """
+    Example 3: 'What is shown in this P&ID?'
+    Expected: requires_vision=True, requires_analytics=False, requires_generation=True, explainable reason.
+    """
+    async def _run():
+        from planner import plan_query
+        decision = await plan_query("What is shown in this P&ID?", conversation_id="conv-pid")
+
+        assert decision.requires_vision is True
+        assert decision.requires_analytics is False
+        assert decision.requires_generation is True
+        assert decision.capability == "vision"
+        assert decision.selected_model == "llava:7b"
+        assert "P&ID" in decision.reason or "diagram" in decision.reason
+
+    asyncio.run(_run())
+
+
+def test_sih_example_4_multi_tool_risk_query():
+    """
+    Example 4: 'Why is Pump P-101 at risk and what should we do?'
+    Expected: requires_retrieval=True, requires_analytics=True, requires_vision=False,
+              requires_generation=True, multi-tool plan with RAG + Analytics + Verify + LLM.
+    """
+    async def _run():
+        from planner import plan_query
+        decision = await plan_query("Why is Pump P-101 at risk and what should we do?", conversation_id="conv-risk")
+
+        assert decision.requires_retrieval is True
+        assert decision.requires_analytics is True
+        assert decision.requires_generation is True
+        assert decision.task_type == "incident_investigation"
+        assert "rag" in decision.selected_tools
+        assert "analytics" in decision.selected_tools
+        assert "verify" in decision.selected_tools
+        assert "llm" in decision.selected_tools
+        assert "telemetry" in decision.reason or "procedures" in decision.reason
+
+    asyncio.run(_run())
+
+
+def test_planner_tool_availability_fallback():
+    """
+    Test fallback behavior when a required tool (e.g. analytics) is unavailable.
+    """
+    async def _run():
+        from planner import plan_query
+        # Analytics tool is unavailable (only rag and llm online)
+        decision = await plan_query(
+            "Is Pump P-101 showing abnormal vibration?",
+            available_tools=["rag", "llm"]
+        )
+
+        assert decision.fallback_action == "direct_llm"
+        assert "unavailable" in decision.reason
+        assert decision.requires_analytics is False
+
+    asyncio.run(_run())
+
+
+def test_planner_user_context_and_security():
+    """
+    Test that user and workspace security context is preserved and respected.
+    """
+    async def _run():
+        from planner import plan_query
+        user_ctx = {
+            "user_role": "field_operator",
+            "workspace_id": "plant_section_4",
+            "allowed_documents": ["p101_sop.pdf"]
+        }
+        decision = await plan_query(
+            "What does the Pump P-101 SOP say?",
+            user_context=user_ctx
+        )
+
+        assert decision.user_context == user_ctx
+        assert decision.user_context["user_role"] == "field_operator"
+        assert decision.requires_retrieval is True
+
+    asyncio.run(_run())
+
+
+

@@ -10,235 +10,229 @@ This document serves as the formal architectural specification and integration c
 
 ---
 
-## 1. High-Level Planner Architecture
+## 1. High-Level Planner Architecture & Decision Layer
 
-The Planner is a lightweight, on-premise agentic coordinator. It decomposes complex industrial engineering queries into discrete tool execution steps, enforces evidence verification, and prevents hallucinations.
+The AI Planner serves as the intelligence and decision-making layer that routes incoming queries to the appropriate on-premise industrial capability without directly executing internal teammate logic.
 
 ```text
                                  User Query
                                      ↓
-                            [FastAPI Backend]
+                               [AI Planner]
                                      ↓
-                          [PlannerService.plan()]
-                                     ↓
-                        Classify Industrial Intent
-  ┌──────────────────────────────────┬──────────────────────────────────┐
-  │                                  │                                  │
-[Incident / Maintenance]      [Vision / P&ID]                    [Document QA]
-  │                                  │                                  │
-  ├→ RAG (Incident Log)              └→ VisionAgent (analyze_image)     └→ RAGAgent (search_documents)
-  ├→ RAG (Maintenance History)
-  ├→ RAG (Equipment Manual)
-  ├→ Analytics (Telemetry/Sensors)
-  │
-  └──────────────────────────────────┬──────────────────────────────────┘
-                                     ↓
-                      [Evidence Verification Agent]
-                   (Grounding Check / Hallucination Guard)
-                      ├── Sufficient   → [LLM Synthesis] → Success Response
-                      └── Insufficient → Return Explicit Uncertainty State
+                          Determine Required Tools
+  ┌───────────────────┬───────────────────┬───────────────────┬───────────────────┐
+  │                   │                   │                   │                   │
+ [RAG]           [Analytics]       [Vision/Diagram]     [Direct LLM]        [Multi-Tool]
+ (SOP / Manual)  (Telemetry Anomaly) (P&ID Schematic)   (General QA)  (Risk / Root-Cause)
+  │                   │                   │                   │                   │
+  └───────────────────┴─────────┬─────────┴───────────────────┴───────────────────┘
+                                ↓
+                 [Evidence Verification Agent]
+             (Grounding Check / Hallucination Guard)
+                 ├── Sufficient   → [LLM Synthesis] → Success Response
+                 └── Insufficient → Return Explicit Uncertainty State
 ```
 
 ---
 
-## 2. Core Tool Interfaces
+## 2. Decision Schema (`PlannerResult`)
 
-The Planner calls other subsystems through decoupled abstract interfaces in `planner/interfaces.py`.
+Every decision produced by the planner conforms to the following Pydantic schema:
 
-### 2.1 RAG / Document Agent Interface
-Owned by: **RAG Team**
-
-```python
-class BaseRAGAgent(ABC):
-    @abstractmethod
-    async def search_documents(
-        self,
-        query: str,
-        user_role: Optional[str] = None,
-        top_k: int = 5,
-        document_ids: Optional[List[str]] = None,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> RAGResult:
-        """Searches document store and returns relevant chunks with citations."""
-        pass
-```
-
-* **Contract Guarantee:** The Planner passes only clean, sanitized queries without prompt leakage.
-* **Access Control:** `user_role` is passed directly for on-premise role-based access control.
-
----
-
-### 2.2 Vision / Multimodal Agent Interface
-Owned by: **Vision / Multimodal Team**
-
-```python
-class BaseVisionAgent(ABC):
-    @abstractmethod
-    async def analyze_image(
-        self,
-        query: str,
-        image_path: Optional[str] = None,
-        image_data: Optional[Any] = None
-    ) -> Dict[str, Any]:
-        """Analyzes P&ID diagrams, flowsheets, blueprints, or document page images."""
-        pass
-```
-
-Expected Return Format:
 ```json
 {
-  "image_id": "pid_drawing_01.svg",
-  "detected_components": [
-    {"tag": "P-101A", "type": "Centrifugal Pump", "status": "In-Service"},
-    {"tag": "CV-201", "type": "Check Valve", "line": "4-inch discharge"}
-  ],
-  "description": "Centrifugal pump P-101A shown with check valve CV-201 on 4-inch discharge.",
-  "confidence": 0.95
-}
-```
-
----
-
-### 2.3 Analytics / Maintenance Agent Interface
-Owned by: **Data Analytics Team**
-
-```python
-class BaseAnalyticsAgent(ABC):
-    @abstractmethod
-    async def get_maintenance_analytics(
-        self,
-        equipment_id: Optional[str] = None,
-        query: Optional[str] = None,
-        parameters: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Retrieves sensor telemetry, anomaly detections, and maintenance metrics."""
-        pass
-```
-
-Expected Return Format:
-```json
-{
-  "equipment_id": "P-101",
-  "telemetry_available": true,
-  "vibration_rms_mm_s": 7.8,
-  "vibration_threshold_mm_s": 4.5,
-  "bearing_temperature_c": 92.4,
-  "anomaly_detected": true,
-  "health_index": "38% (Critical)",
-  "recommended_action": "Emergency overhaul: Replace mechanical seal and thrust bearings.",
-  "confidence": 0.96
-}
-```
-
----
-
-### 2.4 Evidence Verification Agent (Hallucination Guard)
-Owned by: **Planner / Orchestration Module**
-
-```python
-class BaseEvidenceVerifier(ABC):
-    @abstractmethod
-    async def verify_evidence(
-        self,
-        query: str,
-        evidence: List[EvidenceItem],
-        answer: Optional[str] = None
-    ) -> VerificationResult:
-        """Validates factual grounding across collected evidence before final response."""
-        pass
-```
-
-* If evidence is missing or confidence is below threshold (< 0.3):
-  The Orchestrator returns an explicit uncertainty state without hallucinating facts.
-
----
-
-## 3. Backend Integration Contract (`POST /api/chat`)
-
-### 3.1 Input Contract (`ChatRequest`)
-
-```python
-class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, description="User query.")
-    conversation_id: Optional[str] = Field(default=None, description="Session ID.")
-    user_role: Optional[str] = Field(default=None, description="User access role.")
-```
-
-### 3.2 Output Contract (`ChatResponse`)
-
-```python
-class ChatResponse(BaseModel):
-    status: Literal["success", "insufficient_evidence", "error", "clarification"]
-    answer: str
-    conversation_id: Optional[str] = None
-    sources: List[SourceMetadata] = []
-    evidence: List[EvidenceItem] = []
-    confidence: float = 1.0
-    steps: Optional[List[PlanStep]] = None
-    plan: Optional[ExecutionPlan] = None
-    reason: Optional[str] = None
-```
-
-#### Successful Execution Example:
-```json
-{
-  "status": "success",
-  "confidence": 0.94,
-  "answer": "Pump P-101 failed due to severe mechanical seal blowout caused by high vibration (7.8 mm/s vs 4.5 mm/s limit)...",
-  "sources": [
-    {"document": "pump_p101_incident_report.pdf", "page": 1, "score": 0.96},
-    {"document": "pump_p101_maintenance_history.pdf", "page": 4, "score": 0.94}
-  ],
-  "evidence": [
-    {"source_type": "document", "title": "Incident Log", "confidence": 0.96, "content": "..."},
-    {"source_type": "analytics", "title": "Telemetry P-101", "confidence": 0.96, "content": "..."}
+  "action": "rag",
+  "requires_retrieval": true,
+  "requires_analytics": false,
+  "requires_vision": false,
+  "requires_generation": true,
+  "query": "What does the Pump P-101 SOP say?",
+  "reason": "Question requires information from company documents (SOP/manuals).",
+  "task_type": "document_qa",
+  "selected_tools": ["rag", "llm"],
+  "capability": "text",
+  "selected_model": "llama3:8b",
+  "conversation_id": "conv-101",
+  "user_context": {"user_role": "operator", "workspace_id": "unit_4"},
+  "fallback_action": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "rag",
+      "action": "retrieve",
+      "input": "What does the Pump P-101 SOP say?"
+    },
+    {
+      "step": 2,
+      "tool": "llm",
+      "action": "synthesize",
+      "input": "Synthesize a grounded answer based strictly on the retrieved document chunks."
+    }
   ]
 }
 ```
 
-#### Insufficient Evidence (Hallucination Guard) Example:
+### Schema Field Definitions:
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `action` | `Literal["rag", "analytics", "vision", "direct_llm", "multi_tool", "clarification", "web_search"]` | Primary determined action |
+| `requires_retrieval` | `bool` | True if document/manual retrieval via RAG is required |
+| `requires_analytics` | `bool` | True if sensor telemetry / anomaly analytics is required |
+| `requires_vision` | `bool` | True if P&ID diagram / blueprint inspection is required |
+| `requires_generation` | `bool` | True if local LLM answer synthesis is required |
+| `query` | `str` | Cleaned, normalized user query |
+| `reason` | `str` | Explainable decision rationale |
+| `task_type` | `str` | Detailed industrial task classification |
+| `selected_tools` | `List[str]` | List of tools invoked in this plan (`rag`, `analytics`, `vision`, `verify`, `llm`) |
+| `selected_model` | `str` | Configured local open-weight model (e.g. `llama3:8b`, `qwen2.5-coder:7b`, `llava:7b`) |
+| `fallback_action` | `Optional[str]` | Fallback route activated if a tool is offline/unavailable |
+| `user_context` | `Optional[dict]` | User role and workspace access boundaries |
+| `steps` | `List[PlanStep]` | Atomic, ordered execution steps |
+
+---
+
+## 3. Example Queries and Planner Decisions
+
+### Example 1: Document SOP Query
+* **Query:** `"What does the Pump P-101 SOP say?"`
+* **Route:** `RAG`
 ```json
 {
-  "status": "insufficient_evidence",
-  "confidence": 0.0,
-  "answer": "I cannot answer this question because no relevant documents, telemetry, or diagrams were found in the knowledge repository.",
-  "reason": "No matching evidence found in on-premise knowledge repository.",
-  "sources": [],
-  "evidence": []
+  "action": "rag",
+  "requires_retrieval": true,
+  "requires_analytics": false,
+  "requires_vision": false,
+  "requires_generation": true,
+  "query": "What does the Pump P-101 SOP say?",
+  "reason": "Question requires information from company documents (SOP/manuals)."
+}
+```
+
+### Example 2: Real-time Telemetry Query
+* **Query:** `"Is Pump P-101 showing abnormal vibration?"`
+* **Route:** `Analytics`
+```json
+{
+  "action": "analytics",
+  "requires_retrieval": false,
+  "requires_analytics": true,
+  "requires_vision": false,
+  "requires_generation": true,
+  "query": "Is Pump P-101 showing abnormal vibration?",
+  "reason": "Question requires real-time telemetry sensor analysis for vibration/temperature anomalies."
+}
+```
+
+### Example 3: Visual Inspection Query
+* **Query:** `"What is shown in this P&ID?"`
+* **Route:** `Vision`
+```json
+{
+  "action": "vision",
+  "requires_retrieval": false,
+  "requires_analytics": false,
+  "requires_vision": true,
+  "requires_generation": true,
+  "query": "What is shown in this P&ID?",
+  "reason": "Question requires visual analysis of P&ID engineering diagrams and schematics."
+}
+```
+
+### Example 4: Risk Assessment / Incident Troubleshooting
+* **Query:** `"Why is Pump P-101 at risk and what should we do?"`
+* **Route:** `Multi-Tool (RAG + Analytics + Verify + LLM)`
+```json
+{
+  "action": "rag",
+  "requires_retrieval": true,
+  "requires_analytics": true,
+  "requires_vision": false,
+  "requires_generation": true,
+  "query": "Why is Pump P-101 at risk and what should we do?",
+  "selected_tools": ["rag", "analytics", "verify", "llm"],
+  "reason": "Complex question requiring cross-referencing document procedures with telemetry analytics."
 }
 ```
 
 ---
 
-## 4. Multi-Step Task Decomposition Example
+## 4. Backend Integration Instructions
 
-**User Query:**
-> *"Investigate why Pump P-101 failed and tell me what maintenance action is required."*
+Backend engineers can invoke the planner using either the standalone `plan_query` function or the `PlannerService` class:
 
-**Decomposed Execution Plan:**
-1. `Step 1 (rag)`: Retrieve Incident Report & Alarm Logs for P-101.
-2. `Step 2 (rag)`: Retrieve Maintenance History & Overhaul Records for P-101.
-3. `Step 3 (rag)`: Retrieve Technical Manual & Operating Limits for P-101.
-4. `Step 4 (analytics)`: Query Telemetry for vibration and bearing temperature anomalies.
-5. `Step 5 (verify)`: Verify cross-source grounding and evidence consistency.
-6. `Step 6 (llm)`: Synthesize root-cause failure analysis and required maintenance actions.
+### Method 1: Simple Function API (`plan_query`)
+
+```python
+from planner import plan_query
+
+# 1. Evaluate a query
+decision = await plan_query(
+    query="What does the Pump P-101 SOP say?",
+    conversation_id="conv-123",
+    user_context={"user_role": "operator", "workspace_id": "refinery-alpha"}
+)
+
+# 2. Check tool requirements
+if decision.requires_retrieval:
+    # Trigger RAG pipeline
+    pass
+if decision.requires_analytics:
+    # Trigger Telemetry pipeline
+    pass
+if decision.requires_vision:
+    # Trigger Vision pipeline
+    pass
+```
+
+### Method 2: Tool Availability & Fallback Behavior
+
+When certain tools are offline or not deployed in an environment, pass `available_tools`:
+
+```python
+# Analytics agent is offline
+decision = await plan_query(
+    query="Is Pump P-101 showing abnormal vibration?",
+    available_tools=["rag", "llm"]  # analytics not available
+)
+
+print(decision.fallback_action)  # "direct_llm"
+print(decision.reason)           # Contains fallback notification
+```
+
+### Method 3: Full Chat Service Integration (`POST /api/chat`)
+
+```python
+from fastapi import APIRouter
+from planner import ChatService, ChatRequest, ChatResponse
+
+router = APIRouter()
+chat_service = ChatService()
+
+@router.post("/api/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest):
+    return await chat_service.process_chat(request)
+```
 
 ---
 
-## 5. Verification & Tests
+## 5. Security & On-Premise Governance
 
-The test suite validates all 6 required capabilities:
-1. **Simple Document QA** → `RAGAgent.search_documents`
-2. **Image / P&ID QA** → `VisionAgent.analyze_image`
-3. **Maintenance Analytics** → RAG + Analytics Agent
-4. **Complex Incident Investigation** → 6-step multi-agent plan
-5. **Unsupported / Ambiguous Queries** → Safe clarification without crashing
-6. **No Evidence Found** → Hallucination guard with `status="insufficient_evidence"`
+* **Zero Cloud AI Services:** All planner routing uses local open-weight model IDs (`llama3:8b`, `qwen2.5-coder:7b`, `llava:7b`).
+* **Context Preservation & RBAC:** `user_context` (user role, allowed document scopes) is strictly passed through all decisions.
+* **Hallucination Guard:** Responses return `status="insufficient_evidence"` when required grounding data is missing.
+
+---
+
+## 6. Test Commands
 
 ```bash
+# Run all 42 unit, contract, and regression tests
 pytest -v
+
+# Run the interactive CLI demonstration
 python demo.py
 ```
+
 
 
 

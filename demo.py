@@ -24,13 +24,13 @@ async def main():
     chat_service = ChatService()
 
     sample_queries = [
-        ("1. Simple Document QA", "What is the zero-trust policy in the uploaded document?"),
-        ("2. Image / P&ID Diagram", "What pump and valve configuration is shown on the P&ID diagram?"),
-        ("3. Maintenance + Analytics", "What is the maintenance status and telemetry for pump P-101?"),
-        ("4. Complex Incident Investigation", "Investigate why Pump P-101 failed and tell me what maintenance action is required."),
-        ("5. Unsupported / Ambiguous Query", "Tell me more."),
-        ("6. No Evidence / Hallucination Guard", "What are the operating limits of nonexistent_equipment_xyz?"),
-        ("7. General Question", "What is Python?")
+        ("1. Document SOP (RAG)", "What does the Pump P-101 SOP say?"),
+        ("2. Real-time Telemetry (Analytics)", "Is Pump P-101 showing abnormal vibration?"),
+        ("3. Visual Diagram Inspection (Vision)", "What is shown in this P&ID?"),
+        ("4. Risk Assessment (Multi-Tool RAG + Analytics)", "Why is Pump P-101 at risk and what should we do?"),
+        ("5. Ambiguous Query (Clarification)", "Tell me more."),
+        ("6. Hallucination Guard (No Evidence)", "What are the operating limits of nonexistent_equipment_xyz?"),
+        ("7. General Knowledge (Direct Local LLM)", "What is Python?")
     ]
 
     for label, query in sample_queries:
@@ -45,7 +45,7 @@ async def main():
 
         # 2. Complete Chat Orchestration
         request = ChatRequest(message=query, conversation_id="sih-demo-001")
-        response = await chat_service.process_chat(request, document_ids=["sovereign_spec.pdf"])
+        response = await chat_service.process_chat(request, document_ids=["pump_p101_sop.pdf"])
 
         print("\n--- [BACKEND CHAT RESPONSE (ChatResponse)] ---")
         print(f"Status:     {response.status}")
@@ -56,6 +56,17 @@ async def main():
             print(f"Sources:    {[s.model_dump() for s in response.sources]}")
         if response.reason:
             print(f"Reason:     {response.reason}")
+
+    # 3. Tool Unavailable Fallback Demo
+    print(f"\n{'=' * 75}")
+    print(">>> [8. Fallback Demo] Query: 'Is Pump P-101 showing abnormal vibration?' with Analytics Tool Offline")
+    print(f"{'=' * 75}")
+    fallback_decision = await planner.plan(
+        query="Is Pump P-101 showing abnormal vibration?",
+        available_tools=["rag", "llm"]  # analytics offline
+    )
+    print("\n--- [FALLBACK PLANNER DECISION] ---")
+    print(json.dumps(fallback_decision.model_dump(exclude_none=True), indent=2))
 
 
     print("\n" + "=" * 70)

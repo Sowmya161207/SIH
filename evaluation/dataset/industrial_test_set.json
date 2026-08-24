@@ -1,0 +1,459 @@
+{
+  "metadata": {
+    "project": "SIH26117 - Sovereign Industrial AI Workbench",
+    "evaluation_target": "Industrial Document Intelligence & Multimodal RAG",
+    "version": "1.0.0",
+    "total_questions": 25,
+    "categories": [
+      "Equipment specifications",
+      "Maintenance",
+      "Incident analysis",
+      "SOP/procedure",
+      "Cross-document reasoning",
+      "P&ID/image questions",
+      "Multimodal questions"
+    ],
+    "description": "Gold-standard benchmark dataset for evaluating retrieval, source attribution, and factual accuracy over Pump P-101 industrial documentation."
+  },
+  "questions": [
+    {
+      "id": "EVAL-001",
+      "category": "Equipment specifications",
+      "query_type": "specification_lookup",
+      "question": "What is the rated flow, rated head, and motor power for centrifugal process pump P-101?",
+      "expected_source": ["Pump_P101_Equipment_Manual.pdf"],
+      "expected_pages": [1],
+      "expected_key_facts": [
+        "120 m³/h",
+        "45 m",
+        "30 kW"
+      ],
+      "reference_answer": "According to Section 3 of the Pump P-101 Equipment Manual (Page 1), the rated flow is 120 m³/h, the rated head is 45 m, and the motor power is 30 kW.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-002",
+      "category": "Equipment specifications",
+      "query_type": "specification_lookup",
+      "question": "What are the normal operating speed and normal operating temperature range for Pump P-101?",
+      "expected_source": ["Pump_P101_Equipment_Manual.pdf"],
+      "expected_pages": [1],
+      "expected_key_facts": [
+        "1450 RPM",
+        "60–75 °C"
+      ],
+      "reference_answer": "Pump P-101 has a normal operating speed of 1450 RPM and a normal operating temperature range of 60–75 °C as specified in the Equipment Manual (Page 1).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-003",
+      "category": "Equipment specifications",
+      "query_type": "specification_lookup",
+      "question": "What is the normal discharge pressure range and normal vibration baseline for Pump P-101?",
+      "expected_source": ["Pump_P101_Equipment_Manual.pdf"],
+      "expected_pages": [2],
+      "expected_key_facts": [
+        "4.0–4.5 bar",
+        "Below 4.5 mm/s RMS"
+      ],
+      "reference_answer": "The normal discharge pressure range for Pump P-101 is 4.0–4.5 bar, and normal vibration is below 4.5 mm/s RMS (Equipment Manual, Page 2).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-004",
+      "category": "Equipment specifications",
+      "query_type": "threshold_lookup",
+      "question": "What are the defined vibration thresholds for Warning and Critical conditions on Pump P-101, and what actions do they mandate?",
+      "expected_source": ["Pump_P101_Equipment_Manual.pdf"],
+      "expected_pages": [2],
+      "expected_key_facts": [
+        "4.5–7.1 mm/s RMS",
+        "Inspect and investigate",
+        "Above 7.1 mm/s RMS",
+        "Immediate investigation and controlled response"
+      ],
+      "reference_answer": "The Equipment Manual (Section 4, Page 2) defines Warning vibration as 4.5–7.1 mm/s RMS (requiring 'Inspect and investigate') and Critical vibration as above 7.1 mm/s RMS (requiring 'Immediate investigation and controlled response').",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-005",
+      "category": "Maintenance",
+      "query_type": "maintenance_history",
+      "question": "What observations and actions were recorded during Maintenance Event 1 on 12 March 2026 for Pump P-101?",
+      "expected_source": ["Pump_P101_Maintenance_Report.pdf"],
+      "expected_pages": [1],
+      "expected_key_facts": [
+        "12 March 2026",
+        "Routine Preventive Maintenance",
+        "2.6 mm/s RMS",
+        "64 °C",
+        "4.2 bar",
+        "Bearing lubrication was renewed"
+      ],
+      "reference_answer": "On 12 March 2026, routine preventive maintenance was performed on P-101. Observations showed normal casing, coupling, vibration at 2.6 mm/s RMS, bearing temperature at 64 °C, and pressure at 4.2 bar. Bearing lubrication was renewed and coupling fasteners checked (Maintenance Report, Page 1).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-006",
+      "category": "Maintenance",
+      "query_type": "maintenance_history",
+      "question": "What triggered Maintenance Event 2 on 18 May 2026, what vibration level was recorded, and what were the inspection findings?",
+      "expected_source": ["Pump_P101_Maintenance_Report.pdf"],
+      "expected_pages": [2],
+      "expected_key_facts": [
+        "18 May 2026",
+        "5.3 mm/s RMS",
+        "Slight coupling misalignment",
+        "early signs of wear"
+      ],
+      "reference_answer": "Maintenance Event 2 was triggered by a gradual increase in vibration to 5.3 mm/s RMS (in the warning range). Inspection found slight coupling misalignment and early bearing wear (Maintenance Report, Page 2).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-007",
+      "category": "Maintenance",
+      "query_type": "maintenance_history",
+      "question": "What corrective actions and post-maintenance readings resulted from the 18 May 2026 condition-based inspection?",
+      "expected_source": ["Pump_P101_Maintenance_Report.pdf"],
+      "expected_pages": [2],
+      "expected_key_facts": [
+        "Coupling alignment was corrected",
+        "Bearing lubrication was checked and replenished",
+        "3.1 mm/s RMS",
+        "66 °C"
+      ],
+      "reference_answer": "Corrective actions included correcting coupling alignment and replenishing bearing lubrication. Post-maintenance readings returned to normal: vibration decreased to 3.1 mm/s RMS and temperature was 66 °C (Maintenance Report, Page 2).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-008",
+      "category": "Maintenance",
+      "query_type": "guideline_lookup",
+      "question": "What mechanical and condition-monitoring checks are recommended during future routine inspections of Pump P-101?",
+      "expected_source": ["Pump_P101_Maintenance_Report.pdf"],
+      "expected_pages": [5],
+      "expected_key_facts": [
+        "Bearing condition",
+        "Coupling alignment",
+        "Shaft condition",
+        "Impeller condition",
+        "Pump mounting",
+        "Mechanical seal",
+        "Vibration",
+        "Bearing temperature"
+      ],
+      "reference_answer": "Section 8 of the Maintenance Report (Page 5) recommends mechanical checks (bearing condition, coupling alignment, shaft condition, impeller condition, pump mounting, mechanical seal) and condition-monitoring checks (vibration, bearing temperature, discharge pressure, flow, motor speed).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-009",
+      "category": "Incident analysis",
+      "query_type": "incident_lookup",
+      "question": "What was the Incident ID, incident date, and severity of the high-vibration event on Pump P-101?",
+      "expected_source": ["Pump_P101_Incident_Report.pdf"],
+      "expected_pages": [1],
+      "expected_key_facts": [
+        "INC-P101-2026-007",
+        "21 July 2026",
+        "High",
+        "Abnormally High Vibration"
+      ],
+      "reference_answer": "According to the Incident Report (Section 1, Page 1), Incident ID is INC-P101-2026-007, dated 21 July 2026, classified as 'Abnormally High Vibration' with Severity 'High'.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-010",
+      "category": "Incident analysis",
+      "query_type": "incident_lookup",
+      "question": "What specific sensor telemetry values were recorded during the 21 July 2026 high-vibration incident?",
+      "expected_source": ["Pump_P101_Incident_Report.pdf"],
+      "expected_pages": [2],
+      "expected_key_facts": [
+        "8.7 mm/s RMS",
+        "71 °C",
+        "4.1 bar",
+        "1450 RPM"
+      ],
+      "reference_answer": "During the incident, recorded sensor readings were: Vibration 8.7 mm/s RMS (Critical), Temperature 71 °C (Elevated), Discharge Pressure 4.1 bar (Normal), and Speed 1450 RPM (Normal) (Incident Report, Page 2).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-011",
+      "category": "Incident analysis",
+      "query_type": "root_cause_analysis",
+      "question": "What were the primary suspected contributors identified in the root cause assessment of Incident INC-P101-2026-007?",
+      "expected_source": ["Pump_P101_Incident_Report.pdf"],
+      "expected_pages": [3],
+      "expected_key_facts": [
+        "Bearing Degradation",
+        "Coupling Misalignment",
+        "Bearing wear was observed",
+        "Coupling alignment was outside the acceptable condition"
+      ],
+      "reference_answer": "The root cause assessment (Section 8, Page 3) identified bearing degradation (wear on bearing) and coupling misalignment (alignment outside acceptable limits) as the primary suspected contributors, combining sensor data, maintenance history, and physical inspection.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-012",
+      "category": "Incident analysis",
+      "query_type": "incident_lookup",
+      "question": "What were the before and after maintenance measurements for the 21 July 2026 incident, and what corrective actions were executed?",
+      "expected_source": ["Pump_P101_Incident_Report.pdf"],
+      "expected_pages": [3, 4],
+      "expected_key_facts": [
+        "8.7 mm/s RMS",
+        "2.6 mm/s RMS",
+        "71 °C",
+        "65 °C",
+        "Replacement bearing was installed",
+        "Coupling alignment was corrected"
+      ],
+      "reference_answer": "Corrective maintenance included replacing the affected bearing, correcting coupling alignment, and renewing lubrication. Measurements improved from 8.7 mm/s RMS to 2.6 mm/s RMS vibration, and from 71 °C to 65 °C temperature (Incident Report, Pages 3–4).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-013",
+      "category": "SOP/procedure",
+      "query_type": "procedure_lookup",
+      "question": "What are the 5 sequential steps in the High-Vibration Response Procedure when Pump P-101 vibration exceeds normal limits?",
+      "expected_source": ["Pump_P101_SOP.pdf"],
+      "expected_pages": [3, 4],
+      "expected_key_facts": [
+        "Step 1 — Verify the Reading",
+        "Step 2 — Review Other Parameters",
+        "Step 3 — Review History",
+        "Step 4 — Inspect",
+        "Step 5 — Escalate"
+      ],
+      "reference_answer": "Section 8 of the SOP (Pages 3–4) prescribes 5 steps: Step 1 (Verify the Reading), Step 2 (Review Other Parameters: temp, pressure, flow, speed), Step 3 (Review History: recent maintenance, previous vibration), Step 4 (Inspect: bearings, coupling, looseness), Step 5 (Escalate to engineering/maintenance).",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-014",
+      "category": "SOP/procedure",
+      "query_type": "procedure_lookup",
+      "question": "What protocol must be followed when Pump P-101 vibration exceeds 7.1 mm/s RMS under the Critical Vibration Response in the SOP?",
+      "expected_source": ["Pump_P101_SOP.pdf"],
+      "expected_pages": [4],
+      "expected_key_facts": [
+        "exceeds 7.1 mm/s RMS",
+        "Verify the sensor reading",
+        "Notify the responsible operator",
+        "controlled-shutdown procedure",
+        "Inspect bearing and coupling condition"
+      ],
+      "reference_answer": "Under Section 9 of the SOP (Page 4), if vibration exceeds 7.1 mm/s RMS: 1. Verify reading, 2. Notify responsible operator/maintenance, 3. Review parameters, 4. Avoid unnecessary continued operation, 5. Follow controlled-shutdown procedure, 6. Inspect bearing/coupling, 7. Investigate mechanical causes, 8. Document event, 9. Do not restart until declared safe.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-015",
+      "category": "SOP/procedure",
+      "query_type": "troubleshooting_lookup",
+      "question": "According to the troubleshooting guide in the SOP, what are the possible causes and recommended investigations for high temperature and seal leakage?",
+      "expected_source": ["Pump_P101_SOP.pdf"],
+      "expected_pages": [4],
+      "expected_key_facts": [
+        "Bearing/lubrication problem",
+        "Inspect bearing and lubrication",
+        "Mechanical seal issue",
+        "Inspect seal"
+      ],
+      "reference_answer": "According to Section 10 Troubleshooting Guide (Page 4): High temperature indicates a 'Bearing/lubrication problem' requiring 'Inspect bearing and lubrication'; Seal leakage indicates a 'Mechanical seal issue' requiring 'Inspect seal'.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-016",
+      "category": "SOP/procedure",
+      "query_type": "escalation_lookup",
+      "question": "What specific operational conditions mandate immediate escalation to engineering or maintenance personnel under the SOP?",
+      "expected_source": ["Pump_P101_SOP.pdf"],
+      "expected_pages": [5, 6],
+      "expected_key_facts": [
+        "Vibration exceeds the critical limit",
+        "Vibration continues to increase",
+        "Temperature becomes abnormal",
+        "Mechanical damage is suspected",
+        "Repeated alarms occur",
+        "Equipment protection devices activate"
+      ],
+      "reference_answer": "Section 13 of the SOP (Pages 5–6) requires escalation when: vibration exceeds critical limit, vibration continues to increase, temperature becomes abnormal, mechanical damage is suspected, repeated alarms occur, equipment protection devices activate, or safe operation cannot be confirmed.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-017",
+      "category": "Cross-document reasoning",
+      "query_type": "cross_doc_synthesis",
+      "question": "If sensor telemetry detects vibration at 8.7 mm/s RMS on P-101, explain how the Equipment Manual, SOP, and Incident Report together inform the diagnosis and response.",
+      "expected_source": [
+        "Pump_P101_Equipment_Manual.pdf",
+        "Pump_P101_SOP.pdf",
+        "Pump_P101_Incident_Report.pdf"
+      ],
+      "expected_pages": [2, 4, 3],
+      "expected_key_facts": [
+        "exceeds critical limit of 7.1 mm/s RMS",
+        "controlled-shutdown and inspection protocol",
+        "bearing degradation and coupling misalignment"
+      ],
+      "reference_answer": "The Equipment Manual (Page 2) establishes that 8.7 mm/s exceeds the 7.1 mm/s critical threshold. The SOP (Page 4) dictates the immediate response: verify reading, notify operator, execute controlled shutdown, and inspect coupling/bearings. The Incident Report (Page 3) provides precedent showing that a past 8.7 mm/s event on 21 July 2026 was resolved by bearing replacement and coupling realignment.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-018",
+      "category": "Cross-document reasoning",
+      "query_type": "cross_doc_comparison",
+      "question": "Compare the 18 May 2026 inspection in the Maintenance Report with the 21 July 2026 Incident Report regarding coupling alignment and bearing wear.",
+      "expected_source": [
+        "Pump_P101_Maintenance_Report.pdf",
+        "Pump_P101_Incident_Report.pdf"
+      ],
+      "expected_pages": [2, 3],
+      "expected_key_facts": [
+        "18 May 2026",
+        "5.3 mm/s RMS",
+        "slight coupling misalignment and early bearing wear",
+        "21 July 2026",
+        "8.7 mm/s RMS",
+        "severe bearing wear requiring replacement"
+      ],
+      "reference_answer": "On 18 May 2026 (Maintenance Report, Page 2), warning-level vibration of 5.3 mm/s revealed slight coupling misalignment and early bearing wear, managed with alignment correction and lubrication. By 21 July 2026 (Incident Report, Page 3), vibration escalated to critical 8.7 mm/s, where coupling misalignment recurred and bearing wear worsened, necessitating full bearing replacement.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-019",
+      "category": "Cross-document reasoning",
+      "query_type": "cross_doc_validation",
+      "question": "How does the post-maintenance vibration reading achieved in Incident INC-P101-2026-007 compare with the baseline criteria in the Equipment Manual?",
+      "expected_source": [
+        "Pump_P101_Incident_Report.pdf",
+        "Pump_P101_Equipment_Manual.pdf"
+      ],
+      "expected_pages": [4, 2],
+      "expected_key_facts": [
+        "2.6 mm/s RMS",
+        "Below 4.5 mm/s RMS",
+        "normal operating range"
+      ],
+      "reference_answer": "Post-maintenance vibration was recorded at 2.6 mm/s RMS (Incident Report, Page 4). According to the Equipment Manual (Page 2), normal vibration is below 4.5 mm/s RMS. Thus, the 2.6 mm/s result successfully restores the asset well within nominal operating limits.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-020",
+      "category": "Cross-document reasoning",
+      "query_type": "cross_doc_synthesis",
+      "question": "Why do both the Equipment Manual and Maintenance Report emphasize that sensor data alone cannot establish a definitive root cause for high vibration?",
+      "expected_source": [
+        "Pump_P101_Equipment_Manual.pdf",
+        "Pump_P101_Maintenance_Report.pdf"
+      ],
+      "expected_pages": [3, 4],
+      "expected_key_facts": [
+        "sensor reading alone does not establish the root cause",
+        "multiple possible causes",
+        "physical inspection and supporting evidence are required"
+      ],
+      "reference_answer": "Both documents state that high vibration can arise from multiple distinct mechanical issues (bearing wear, coupling misalignment, unbalance, looseness, or hydraulic flow anomalies). Sensor data detects the anomaly, but physical inspection and maintenance history are essential to confirm the physical root cause.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-021",
+      "category": "P&ID/image questions",
+      "query_type": "visual_layout",
+      "question": "What are the primary component boundaries and fluid connection points listed in the equipment technical description for Pump P-101?",
+      "expected_source": ["Pump_P101_Equipment_Manual.pdf"],
+      "expected_pages": [1],
+      "expected_key_facts": [
+        "Electric motor",
+        "Pump casing",
+        "Impeller",
+        "Shaft",
+        "Bearings",
+        "Mechanical seal",
+        "Coupling",
+        "Suction connection",
+        "Discharge connection"
+      ],
+      "reference_answer": "Section 2 of the Equipment Manual (Page 1) lists 9 major components and boundary interfaces: Electric motor, Pump casing, Impeller, Shaft, Bearings, Mechanical seal, Coupling, Suction connection, and Discharge connection.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-022",
+      "category": "P&ID/image questions",
+      "query_type": "safety_boundary",
+      "question": "What physical safety isolations and lockout/tagout boundary conditions must be verified before performing inspection on P-101?",
+      "expected_source": [
+        "Pump_P101_Equipment_Manual.pdf",
+        "Pump_P101_SOP.pdf"
+      ],
+      "expected_pages": [4, 1],
+      "expected_key_facts": [
+        "Isolate the equipment",
+        "lockout/tagout procedures",
+        "Confirm that rotating components have stopped",
+        "appropriate personal protective equipment"
+      ],
+      "reference_answer": "According to Section 11 of the Equipment Manual (Page 4) and Section 4 of the SOP (Pages 1–2), personnel must follow site safety procedures, isolate the pump, apply lockout/tagout, confirm rotating components have completely stopped, and wear appropriate PPE.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-023",
+      "category": "P&ID/image questions",
+      "query_type": "visual_inspection",
+      "question": "What specific physical visual inspection checkpoints are examined on the pump casing, mounting bolts, and mechanical seal during maintenance?",
+      "expected_source": [
+        "Pump_P101_Maintenance_Report.pdf",
+        "Pump_P101_Incident_Report.pdf"
+      ],
+      "expected_pages": [1, 3],
+      "expected_key_facts": [
+        "Pump casing acceptable condition",
+        "Mechanical seal showed no significant leakage",
+        "Pump mounting bolts were secure",
+        "Impeller condition visually acceptable"
+      ],
+      "reference_answer": "Maintenance records specify verifying: pump casing has no major damage/cracking, mechanical seal shows no significant leakage, pump mounting bolts are secure/tight, and impeller is visually intact and free of damage.",
+      "is_multimodal": false
+    },
+    {
+      "id": "EVAL-024",
+      "category": "Multimodal questions",
+      "query_type": "telemetry_doc_correlation",
+      "question": "Given incoming sensor telemetry: Vibration = 8.7 mm/s RMS, Temp = 71 °C, Pressure = 4.1 bar, Speed = 1450 RPM. Correlate this with Equipment Manual thresholds, identify the condition, and cite the SOP response protocol.",
+      "expected_source": [
+        "Pump_P101_Equipment_Manual.pdf",
+        "Pump_P101_SOP.pdf"
+      ],
+      "expected_pages": [2, 4],
+      "expected_key_facts": [
+        "8.7 mm/s RMS exceeds critical threshold of 7.1 mm/s",
+        "Temperature 71 °C is elevated",
+        "Pressure 4.1 bar and Speed 1450 RPM are normal",
+        "Critical Vibration Response SOP",
+        "controlled shutdown and bearing/coupling inspection"
+      ],
+      "reference_answer": "Correlation: 1. Vibration at 8.7 mm/s RMS exceeds the Equipment Manual critical limit of 7.1 mm/s RMS. 2. Temperature at 71 °C is near the upper normal bound (60–75 °C). 3. Pressure (4.1 bar) and speed (1450 RPM) remain nominal. 4. SOP Section 9 activates Critical Vibration Response: verify reading, notify operator, initiate controlled shutdown, and inspect bearings and coupling.",
+      "is_multimodal": true
+    },
+    {
+      "id": "EVAL-025",
+      "category": "Multimodal questions",
+      "query_type": "multimodal_decision_support",
+      "question": "When the Data Analytics module flags a Health Score of 22.0 (Risk: Critical) with rising vibration and falling pressure, synthesize the sensor findings with SOP escalation rules and historical incident recommendations.",
+      "expected_source": [
+        "Pump_P101_SOP.pdf",
+        "Pump_P101_Incident_Report.pdf",
+        "Pump_P101_Maintenance_Report.pdf"
+      ],
+      "expected_pages": [5, 4, 4],
+      "expected_key_facts": [
+        "Risk: Critical",
+        "SOP escalation criteria",
+        "immediate operational review and physical inspection",
+        "review vibration trends and coupling alignment",
+        "bearing replacement and alignment precedent"
+      ],
+      "reference_answer": "Synthesis: 1. Health Score 22.0 triggers SOP Section 13 escalation for critical condition and multi-sensor deviation. 2. SOP mandates immediate operational review, physical inspection of coupling/bearings, and controlled shutdown if needed. 3. Incident INC-P101-2026-007 and Maintenance Report historical precedent indicates high vibration with concurrent temperature rise is resolved by coupling realignment and bearing replacement. Sensor analytics provides decision support while physical inspection confirms mechanical integrity.",
+      "is_multimodal": true
+    }
+  ]
+}

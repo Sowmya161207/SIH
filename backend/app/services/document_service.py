@@ -74,7 +74,7 @@ class DocumentService:
 
         created_at = datetime.now(timezone.utc)
 
-        # 7. Store metadata
+        # 7. Store metadata & trigger RAG ingestion pipeline
         metadata = {
             "document_id": document_id,
             "filename": filename,
@@ -83,6 +83,18 @@ class DocumentService:
             "created_at": created_at,
             "path": file_path
         }
+
+        try:
+            from app.services.rag_service import ingest_document
+            ingest_res = ingest_document(
+                document_id=document_id,
+                file_path=file_path,
+                metadata={"filename": filename, "title": filename}
+            )
+            logger.info("RAG ingestion completed for %s: %d chunks added", document_id, ingest_res.get("chunks_added", 0))
+        except Exception as exc:
+            logger.warning("RAG ingestion failed for document %s: %s", document_id, exc)
+
         self._documents[document_id] = metadata
 
         logger.info(f"Successfully uploaded and stored document ID: {document_id} ({filename})")

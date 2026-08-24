@@ -16,6 +16,8 @@ ENV/
 # Data & Database persistence
 rag/vector_store/chroma_db/
 RAG/rag/vector_store/chroma_db/
+backend/rag_vector_db/
+rag_vector_db/
 *.log
 
 # OS generated files

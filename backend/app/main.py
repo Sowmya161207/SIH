@@ -4,6 +4,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 
+import os
+import sys
+
+# Add project root to sys.path to resolve 'security' module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from security.audit import AuditLogger
+
+# Global audit logger instance
+audit_logger = AuditLogger()
+
 from app.core.config import settings
 from app.core.exceptions import (
     AppException,

@@ -42,6 +42,8 @@ class DocumentMetadata:
     page: Optional[int] = 1
     chunk_id: Optional[str] = None
     created_date: Optional[str] = None
+    workspace_id: str = "default"
+    allowed_roles: List[str] = field(default_factory=lambda: ["Admin", "Manager", "Maintenance Engineer", "Operator", "Safety Officer"])
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,6 +76,8 @@ class RetrievalFilter:
     doc_type: Optional[Union[DocumentType, str, List[str]]] = None
     criticality: Optional[Union[CriticalityLevel, str, List[str]]] = None
     min_score: float = 0.0
+    workspace_id: Optional[str] = None
+    user_roles: Optional[List[str]] = None
 
     @classmethod
     def from_dict(cls, d: Optional[Dict[str, Any]]) -> "RetrievalFilter":
@@ -84,7 +88,9 @@ class RetrievalFilter:
             unit=d.get("unit"),
             doc_type=d.get("doc_type") or d.get("type"),
             criticality=d.get("criticality") or d.get("severity"),
-            min_score=float(d.get("min_score", 0.0))
+            min_score=float(d.get("min_score", 0.0)),
+            workspace_id=d.get("workspace_id"),
+            user_roles=d.get("user_roles")
         )
 
 

@@ -3,13 +3,20 @@ import uuid
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any
-from fastapi import UploadFile
+import sys
+from fastapi import UploadFile, HTTPException, status
 
 from app.core.config import settings
 from app.core.exceptions import InvalidFileException, FileNotFoundException, FileTooLargeException
 from app.models.document import DocumentUploadResponse, DocumentStatusResponse
+from app.core.security import User
+
+# Ensure security module is available
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from security.audit import AuditLogger
 
 logger = logging.getLogger(__name__)
+audit = AuditLogger()
 
 
 class DocumentService:
@@ -26,7 +33,7 @@ class DocumentService:
         os.makedirs(upload_path, exist_ok=True)
         return upload_path
 
-    async def upload_document(self, file: UploadFile) -> DocumentUploadResponse:
+    async def upload_document(self, file: UploadFile, user: User) -> DocumentUploadResponse:
         """Validate, store, and track an uploaded PDF document."""
         logger.info(f"Receiving document upload request for file: {file.filename}")
 
@@ -81,9 +88,13 @@ class DocumentService:
             "status": "uploaded",
             "size_bytes": file_size,
             "created_at": created_at,
-            "path": file_path
+            "path": file_path,
+            "workspace_id": user.workspace_id,
+            "allowed_roles": list(set(["Admin"] + user.roles))
         }
         self._documents[document_id] = metadata
+
+        audit.log_document_processed(document_id, filename, 1, file_size)
 
         logger.info(f"Successfully uploaded and stored document ID: {document_id} ({filename})")
 
@@ -95,7 +106,7 @@ class DocumentService:
             created_at=created_at
         )
 
-    async def get_document_status(self, document_id: str) -> DocumentStatusResponse:
+    async def get_document_status(self, document_id: str, user: User) -> DocumentStatusResponse:
         """Retrieve status and metadata for a given document ID."""
         logger.info(f"Document lookup requested for ID: {document_id}")
 
@@ -103,6 +114,15 @@ class DocumentService:
             raise FileNotFoundException(f"Document with ID '{document_id}' was not found.")
 
         meta = self._documents[document_id]
+        
+        # Security: Enforce Workspace Isolation
+        if meta.get("workspace_id") and meta["workspace_id"] != user.workspace_id:
+            if meta["workspace_id"] != "default":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have permission to access this document."
+                )
+
         return DocumentStatusResponse(
             document_id=meta["document_id"],
             filename=meta["filename"],

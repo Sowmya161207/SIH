@@ -130,7 +130,16 @@ class EvidenceRetriever:
         self.avg_doc_len = total_len / self.num_docs if self.num_docs > 0 else 1.0
 
     def _matches_filters(self, meta: DocumentMetadata, rf: RetrievalFilter) -> bool:
-        """Apply metadata filtering criteria."""
+        """Apply metadata filtering criteria including security (workspace & roles)."""
+        if rf.workspace_id and meta.workspace_id != rf.workspace_id:
+            if meta.workspace_id != "default":
+                return False
+                
+        if rf.user_roles and "Admin" not in rf.user_roles:
+            has_access = any(role in meta.allowed_roles for role in rf.user_roles)
+            if not has_access:
+                return False
+
         if rf.equipment_tag:
             tags = [rf.equipment_tag.lower()] if isinstance(rf.equipment_tag, str) else [t.lower() for t in rf.equipment_tag]
             if not meta.equipment_tag or meta.equipment_tag.lower() not in tags:

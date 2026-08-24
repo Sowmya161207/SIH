@@ -15,7 +15,9 @@ def answer_and_verify(
     query: str,
     filters: Optional[Dict[str, Any]] = None,
     telemetry_context: Optional[List[str]] = None,
-    top_k: int = 4
+    top_k: int = 4,
+    workspace_id: Optional[str] = None,
+    user_roles: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Execute full industrial retrieval -> reasoning -> verification flow.
@@ -24,8 +26,18 @@ def answer_and_verify(
     :param filters: Optional metadata filters (e.g. {"equipment_tag": "P-101"})
     :param telemetry_context: Live sensor observations / metrics
     :param top_k: Maximum evidence chunks to retrieve
+    :param workspace_id: The workspace ID of the requesting user
+    :param user_roles: The roles of the requesting user
     :return: Full structured response with citations and verification status
     """
+    # Inject security context into filters
+    if filters is None:
+        filters = {}
+    if workspace_id:
+        filters["workspace_id"] = workspace_id
+    if user_roles:
+        filters["user_roles"] = user_roles
+
     # 1. Retrieve RAG Evidence
     search_res = search_documents(query, filters=filters, top_k=top_k)
     rag_evidence = search_res.get_evidence_texts()

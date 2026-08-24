@@ -9,3 +9,6 @@ htmlcov/
 .venv/
 venv/
 ENV/
+node_modules/
+dist/
+build/

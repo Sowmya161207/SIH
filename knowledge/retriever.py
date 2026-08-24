@@ -209,6 +209,8 @@ class EvidenceRetriever:
 
             # Equipment Tag & Entity Boost
             meta_tag = (chunk.metadata.equipment_tag or "").lower()
+            if retrieval_filter.equipment_tag and meta_tag and meta_tag == str(retrieval_filter.equipment_tag).lower():
+                score += 2.0
             if meta_tag and meta_tag in query_lower:
                 score += 4.5
             elif equipment_mentions and meta_tag and any(tag in meta_tag for tag in equipment_mentions):

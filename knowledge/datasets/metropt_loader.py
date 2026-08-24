@@ -118,3 +118,40 @@ class MetroPTDatasetLoader:
                     "sensor_evidence": evidence_items
                 })
         return findings
+
+
+def load_sample_telemetry_findings() -> List[Dict[str, Any]]:
+    """Helper to load telemetry findings directly for QA and Planner."""
+    loader = MetroPTDatasetLoader()
+    raw = loader.generate_sensor_evidence_findings()
+    formatted = []
+    for item in raw:
+        formatted.append({
+            "equipment_tag": item["equipment_tag"],
+            "finding": " ".join(item["sensor_evidence"]),
+            "timestamp": item["timestamp"]
+        })
+    return formatted
+
+
+def compute_telemetry_summary_statistics() -> Dict[str, Any]:
+    """Helper to compute summary statistics directly for analytics."""
+    loader = MetroPTDatasetLoader()
+    stats = loader.get_summary_statistics()
+    return {
+        "total_samples": stats.get("total_samples", 0),
+        "vibration_rms": {
+            "max": stats.get("vibration_rms_max", 0.0),
+            "mean": stats.get("vibration_rms_mean", 0.0)
+        },
+        "motor_temp_deg_c": {
+            "max": stats.get("motor_temp_max_deg_c", 0.0),
+            "mean": stats.get("motor_temp_mean_deg_c", 0.0)
+        },
+        "anomaly_counts": {
+            "total_anomalies": stats.get("anomaly_samples", 0),
+            "high_vibration": stats.get("anomaly_samples", 0)
+        },
+        "detected_failure_modes": stats.get("detected_failure_modes", [])
+    }
+

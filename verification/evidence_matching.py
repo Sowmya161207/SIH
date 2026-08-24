@@ -34,11 +34,14 @@ CAUSAL_INDIRECT_PATTERNS = [
 
 
 def normalize_tokens(text: str) -> List[str]:
-    """Tokenize and clean text into normalized terms."""
+    """Tokenize, remove stopwords, and clean text into normalized terms."""
+    from .claim_extraction import STOPWORDS
     words = re.findall(r"\b[a-zA-Z0-9_\-\.%]+\b", text.lower())
     # Strip basic suffixes for light stem matching
     stems = []
     for w in words:
+        if w in STOPWORDS or len(w) <= 1:
+            continue
         if len(w) > 4 and w.endswith("ing"):
             stems.append(w[:-3])
         elif len(w) > 3 and w.endswith("ed"):
@@ -117,17 +120,15 @@ def is_indirect_evidence(claim: Claim, evidence: EvidenceItem) -> bool:
     if ("overdue" in evidence_lower or "pending" in evidence_lower):
         if any(ent.lower() in evidence_lower for ent in claim.entities) or any(kw in evidence_lower for kw in claim.keywords):
             return True
-        if any(t in claim_lower and t in evidence_lower for t in ["bearing", "pump", "motor", "valve", "seal", "lubricat", "oil"]):
+        if any(t in claim_lower and t in evidence_lower for t in ["bearing", "seal", "lubricat", "oil", "impeller", "coupling"]):
             return True
 
     # If evidence explicitly mentions causal manual rules or guidelines
     for pattern in CAUSAL_INDIRECT_PATTERNS:
         if re.search(pattern, evidence_lower):
-            # Check if the causal statement relates to the claim's entities, keywords, or shared topic
-            if any(kw in evidence_lower for kw in claim.keywords) or any(ent.lower() in evidence_lower for ent in claim.entities):
-                return True
-            matching_topics = ["bearing", "wear", "degrad", "vibrat", "leak", "overheat", "pump", "motor", "valve", "seal", "lubricat"]
-            if any(t in claim_lower and t in evidence_lower for t in matching_topics):
+            # Check if the causal statement relates to specific failure topic
+            failure_topics = ["bearing", "wear", "degrad", "vibrat", "leak", "overheat", "seal", "lubricat", "misalign", "cavitat", "fatigue", "crack"]
+            if any(t in claim_lower and t in evidence_lower for t in failure_topics):
                 return True
 
     if "temperature" in evidence_lower and any(term in claim_lower for term in ["overheat", "thermal", "hot", "cool"]):
@@ -182,10 +183,10 @@ def match_claim_to_evidence(claim: Claim, evidence_items: List[EvidenceItem]) ->
         item_tokens = normalize_tokens(item.text)
         score = compute_token_overlap(combined_claim_tokens, item_tokens)
 
-        # Entity boost
-        for entity in claim.entities:
-            if entity.lower() in item.text.lower():
-                score += 0.25
+        # Entity boost only if there is meaningful semantic overlap beyond just the tag
+        entity_matched = any(entity.lower() in item.text.lower() for entity in claim.entities)
+        if entity_matched and score >= 0.25:
+            score += 0.25
 
         # Check contradiction first
         if check_contradiction(claim, item):
@@ -196,11 +197,10 @@ def match_claim_to_evidence(claim: Claim, evidence_items: List[EvidenceItem]) ->
         if is_indirect_evidence(claim, item):
             adjusted_score = max(score, 0.45)
             result.indirect_matches.append((item, adjusted_score))
-        elif score >= 0.25 or (score >= 0.15 and len(claim.entities) > 0):
+        elif score >= 0.35:
             result.direct_matches.append((item, score))
-        elif score > 0.1:
-            # Low overlap, treat as weak indirect or context
-            result.indirect_matches.append((item, score))
+        elif score >= 0.25 and entity_matched:
+            result.direct_matches.append((item, score))
 
     # Calculate overall best match score
     all_scores = [s for _, s in result.direct_matches] + [s * 0.85 for _, s in result.indirect_matches]

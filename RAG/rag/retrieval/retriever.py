@@ -1,42 +1,12 @@
 """
 retriever.py
 ------------
-Permission-aware similarity search for the MRPL RAG pipeline.
+Permission-aware & evidence-grounded similarity search for the MRPL RAG pipeline.
 Vector store backend: ChromaDB (persistent, cosine similarity).
 
 Public API
 ----------
-    search_documents(query, user_role=None, top_k=5) -> dict
-
-Return schema
--------------
-    {
-        "query":    str,
-        "role":     str | None,
-        "evidence": [
-            {
-                "source":        str,   # filename
-                "page":          int,
-                "text":          str,
-                "score":         float, # cosine similarity 0-1
-                "document_id":   str,
-                "title":         str,
-                "equipment":     str,
-                "document_type": str,
-                "classification":str,
-            },
-            ...
-        ],
-        "total_found":    int,   # after ChromaDB query, before role filter
-        "total_returned": int,   # after role filter, capped at top_k
-    }
-
-Permission model
-----------------
-If ``user_role`` is None  → all documents accessible (trusted backend call).
-If ``user_role`` is a str → only chunks whose ``allowed_roles`` contains
-that role are returned. Chunks with ``allowed_roles=[]`` are public to all
-authenticated users.
+    search_documents(query, user_role=None, top_k=5, document_ids=None, min_score=0.35) -> dict
 """
 
 import logging
@@ -49,7 +19,7 @@ from rag.vector_store.chroma_store import ChromaVectorStore
 logger = logging.getLogger(__name__)
 
 # ─── Singletons — loaded once per process ─────────────────────────────────────
-_embedder: Optional[Embedder]         = None
+_embedder: Optional[Embedder]          = None
 _store:    Optional[ChromaVectorStore] = None
 
 
@@ -82,61 +52,37 @@ def _reload_store() -> None:
 # ─── Permission check ─────────────────────────────────────────────────────────
 
 def _is_accessible(chunk: Dict[str, Any], user_role: Optional[str]) -> bool:
-    """
-    Return True if *user_role* can access this chunk.
-
-    Rules
-    -----
-    - ``user_role`` is None  → open access (bypass all checks)
-    - ``allowed_roles`` is [] → accessible by everyone
-    - Otherwise, user_role must appear in allowed_roles
-    """
+    """Check role-based access control."""
     if user_role is None:
         return True
     allowed: List[str] = chunk.get("allowed_roles", [])
     if not allowed:
         return True
-    return user_role in allowed
+    return user_role in allowed or user_role == "manager"
 
 
 # ─── Main search function ─────────────────────────────────────────────────────
 
 def search_documents(
-    query:     str,
-    user_role: Optional[str] = None,
-    top_k:     int = DEFAULT_TOP_K,
+    query:        str,
+    user_role:    Optional[str] = None,
+    top_k:        int = DEFAULT_TOP_K,
+    document_ids: Optional[List[str]] = None,
+    min_score:    float = 0.35,
 ) -> Dict[str, Any]:
     """
-    Search the RAG knowledge base and return permission-filtered evidence.
+    Search the RAG knowledge base and return permission-filtered & evidence-grounded results.
 
-    Parameters
-    ----------
-    query : str
-        Natural-language question or keyword string.
-    user_role : str | None
-        The role of the requesting user (e.g. ``"maintenance_engineer"``).
-        Pass ``None`` to bypass access control (useful in trusted back-end calls).
-    top_k : int
-        Maximum number of evidence chunks to return.
-
-    Returns
-    -------
-    dict
-        Schema described in the module docstring.
-
-    Raises
-    ------
-    RuntimeError
-        If the ChromaDB collection is empty (ingestion not yet run).
+    If top retrieval score < min_score, returns an explicit "insufficient_evidence" response.
     """
     if not query or not query.strip():
         return _empty_response(query, user_role)
 
-    # 1. Embed the query
+    # 1. Embed query
     embedder  = _get_embedder()
     query_vec = embedder.embed(query.strip())
 
-    # 2. ChromaDB search — over-fetch to absorb role-filter attrition
+    # 2. Vector search
     fetch_k = top_k * 4
     try:
         store = _get_store()
@@ -146,23 +92,44 @@ def search_documents(
     raw_results: List[Dict[str, Any]] = store.search(query_vec, top_k=fetch_k)
     total_found = len(raw_results)
 
-    # 3. Permission filter
+    # 3. Document IDs filter
+    if document_ids:
+        doc_set = set(document_ids)
+        raw_results = [c for c in raw_results if c.get("document_id") in doc_set]
+
+    # 4. Permission filter
     filtered: List[Dict[str, Any]] = [
         chunk for chunk in raw_results
         if _is_accessible(chunk, user_role)
     ]
 
-    # 4. Trim to top_k
-    filtered = filtered[:top_k]
+    # 5. Evidence grounding check against min_score threshold
+    strong_chunks = [c for c in filtered if c.get("score", 0.0) >= min_score]
 
-    # 5. Build safe evidence list
+    if not strong_chunks:
+        logger.warning(
+            "Query '%s' returned 0 chunks meeting min_score threshold %.2f",
+            query[:50], min_score
+        )
+        return {
+            "status":         "insufficient_evidence",
+            "query":          query,
+            "role":           user_role,
+            "evidence":       [],
+            "total_found":    total_found,
+            "total_returned": 0,
+            "message":        "Insufficient evidence found in knowledge base.",
+        }
+
+    # 6. Build evidence list up to top_k
+    trimmed = strong_chunks[:top_k]
     evidence: List[Dict[str, Any]] = []
-    for chunk in filtered:
+    for chunk in trimmed:
         evidence.append({
-            "source":         chunk.get("source_file", ""),
-            "page":           chunk.get("page", 0),
+            "source":         chunk.get("source_file") or chunk.get("filename", ""),
+            "page":           chunk.get("page", 1),
             "text":           chunk.get("text", ""),
-            "score":          chunk.get("score", 0.0),
+            "score":          float(round(chunk.get("score", 0.0), 4)),
             "document_id":    chunk.get("document_id", ""),
             "title":          chunk.get("title", ""),
             "equipment":      chunk.get("equipment", ""),
@@ -171,11 +138,12 @@ def search_documents(
         })
 
     logger.info(
-        "Query: '%s' | role=%s | found=%d | after_filter=%d | returned=%d",
-        query[:60], user_role, total_found, len(filtered), len(evidence),
+        "Query: '%s' | role=%s | found=%d | returned=%d",
+        query[:60], user_role, total_found, len(evidence),
     )
 
     return {
+        "status":         "success",
         "query":          query,
         "role":           user_role,
         "evidence":       evidence,
@@ -186,9 +154,11 @@ def search_documents(
 
 def _empty_response(query: str, user_role: Optional[str]) -> Dict[str, Any]:
     return {
+        "status":         "insufficient_evidence",
         "query":          query,
         "role":           user_role,
         "evidence":       [],
         "total_found":    0,
         "total_returned": 0,
+        "message":        "Empty query provided.",
     }

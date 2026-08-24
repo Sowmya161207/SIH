@@ -41,62 +41,23 @@ logger = logging.getLogger("rag_services")
 # ══════════════════════════════════════════════════════════════════════════════
 
 def search_documents(
-    query:     str,
-    user_role: Optional[str] = None,
-    top_k:     int = 5,
+    query:        str,
+    user_role:    Optional[str] = None,
+    top_k:        int = 5,
+    document_ids: Optional[List[str]] = None,
+    min_score:    float = 0.35,
 ) -> Dict[str, Any]:
     """
-    Search the RAG knowledge base.
-
-    Parameters
-    ----------
-    query : str
-        Natural-language question, e.g. "bearing temperature exceeded in P-101".
-    user_role : str | None
-        Role of the requesting user:
-          - ``"maintenance_engineer"``
-          - ``"operator"``
-          - ``"safety_officer"``
-          - ``"manager"``
-          - ``None``  →  bypass access control (trusted backend call)
-    top_k : int
-        Maximum number of evidence chunks to return (default 5).
-
-    Returns
-    -------
-    dict
-        ::
-
-            {
-                "query":   "bearing temperature exceeded in P-101",
-                "role":    "maintenance_engineer",
-                "evidence": [
-                    {
-                        "source":        "maintenance_report_p101.pdf",
-                        "page":          3,
-                        "text":          "… bearing temp rose to 92°C …",
-                        "score":         0.91,
-                        "document_id":   "maint_report_p101",
-                        "title":         "Pump P-101 Maintenance Report",
-                        "equipment":     "Pump P-101",
-                        "document_type": "maintenance",
-                        "classification":"internal",
-                    },
-                    …
-                ],
-                "total_found":    12,
-                "total_returned":  5,
-            }
-
-    Raises
-    ------
-    RuntimeError
-        If the vector store hasn't been built yet. Run::
-
-            python ingest_documents.py --pdf_dir data/demo/
+    Search the RAG knowledge base. Passes document_ids and min_score threshold.
     """
     from rag.retrieval.retriever import search_documents as _search
-    return _search(query=query, user_role=user_role, top_k=top_k)
+    return _search(
+        query=query,
+        user_role=user_role,
+        top_k=top_k,
+        document_ids=document_ids,
+        min_score=min_score,
+    )
 
 
 def ingest_pdf(

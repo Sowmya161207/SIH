@@ -9,7 +9,6 @@ interface DocumentsProps {
   isUploading: boolean;
   uploadError: string | null;
   uploadSuccess: boolean;
-  uploadStatus: string | null;
   clearUploadState: () => void;
   removeDocument: (id: string) => void;
 }
@@ -20,7 +19,6 @@ export const Documents: React.FC<DocumentsProps> = ({
   isUploading,
   uploadError,
   uploadSuccess,
-  uploadStatus,
   clearUploadState,
   removeDocument,
 }) => {
@@ -38,7 +36,6 @@ export const Documents: React.FC<DocumentsProps> = ({
         isUploading={isUploading}
         uploadError={uploadError}
         uploadSuccess={uploadSuccess}
-        uploadStatus={uploadStatus}
         clearUploadState={clearUploadState}
       />
 

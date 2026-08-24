@@ -9,7 +9,7 @@ interface DocumentStatusProps {
 export const DocumentStatus: React.FC<DocumentStatusProps> = ({ status }) => {
   const config = {
     uploaded: {
-      label: 'Uploading',
+      label: 'Uploaded',
       className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
       icon: FileUp,
       spin: false,
@@ -21,7 +21,7 @@ export const DocumentStatus: React.FC<DocumentStatusProps> = ({ status }) => {
       spin: true,
     },
     completed: {
-      label: 'Indexed',
+      label: 'Ready',
       className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
       icon: CheckCircle2,
       spin: false,

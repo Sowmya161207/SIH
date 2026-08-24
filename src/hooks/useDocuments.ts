@@ -10,7 +10,6 @@ export const useDocuments = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   // Sync to local storage
   useEffect(() => {
@@ -60,8 +59,7 @@ export const useDocuments = () => {
       const doc = await uploadDocument(file);
       setDocuments((prevDocs) => [doc, ...prevDocs]);
       setUploadSuccess(true);
-      setUploadStatus(doc.status);
-      
+
       // Start polling for this new document
       if (doc.status === 'uploaded' || doc.status === 'processing') {
         pollDocumentStatus(doc.document_id);
@@ -84,13 +82,11 @@ export const useDocuments = () => {
     isUploading,
     uploadError,
     uploadSuccess,
-    uploadStatus,
     uploadFile,
     removeDocument,
     clearUploadState: () => {
       setUploadError(null);
       setUploadSuccess(false);
-      setUploadStatus(null);
     },
   };
 };

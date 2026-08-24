@@ -10,11 +10,9 @@ import { useDocuments } from './hooks/useDocuments';
 import { useChat } from './hooks/useChat';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAuthenticated') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentTab, setCurrentTab] = useState('dashboard');
-  
+
   // Custom hooks
   const docState = useDocuments();
   const chatState = useChat();
@@ -23,9 +21,9 @@ function App() {
     switch (currentTab) {
       case 'dashboard':
         return (
-          <Dashboard 
-            documents={docState.documents} 
-            setCurrentTab={setCurrentTab} 
+          <Dashboard
+            documents={docState.documents}
+            setCurrentTab={setCurrentTab}
           />
         );
       case 'documents':
@@ -36,7 +34,6 @@ function App() {
             isUploading={docState.isUploading}
             uploadError={docState.uploadError}
             uploadSuccess={docState.uploadSuccess}
-            uploadStatus={docState.uploadStatus}
             clearUploadState={docState.clearUploadState}
             removeDocument={docState.removeDocument}
           />
@@ -56,9 +53,9 @@ function App() {
         return <SystemStatus />;
       default:
         return (
-          <Dashboard 
-            documents={docState.documents} 
-            setCurrentTab={setCurrentTab} 
+          <Dashboard
+            documents={docState.documents}
+            setCurrentTab={setCurrentTab}
           />
         );
     }

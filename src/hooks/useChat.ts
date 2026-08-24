@@ -49,11 +49,11 @@ export const useChat = () => {
 
     try {
       const response = await sendChatMessage(request);
-      
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: response.answer?.trim() ? response.answer : "I couldn't generate an answer based on the provided documents.",
+        content: response.answer,
         timestamp: new Date().toISOString(),
         sources: response.sources || [],
       };

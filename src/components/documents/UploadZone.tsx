@@ -6,7 +6,6 @@ interface UploadZoneProps {
   isUploading: boolean;
   uploadError: string | null;
   uploadSuccess: boolean;
-  uploadStatus: string | null;
   clearUploadState: () => void;
 }
 
@@ -15,7 +14,6 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   isUploading,
   uploadError,
   uploadSuccess,
-  uploadStatus,
   clearUploadState,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -123,11 +121,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
           onDragLeave={handleDrag}
           onDrop={handleDrop}
           onClick={triggerFileInput}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
-            dragActive
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${dragActive
               ? 'border-indigo-500 bg-indigo-500/5'
               : 'border-[#1e293b] hover:border-slate-600 bg-[#090d16]/30'
-          }`}
+            }`}
         >
           <input
             type="file"
@@ -188,16 +185,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
         <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start space-x-2 text-emerald-400 text-xs animate-fadeIn">
           <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">
-              {uploadStatus === 'processing' || uploadStatus === 'uploaded' 
-                ? 'Upload Initiated' 
-                : 'Upload Complete'}
-            </p>
-            <p className="mt-0.5">
-              {uploadStatus === 'processing' || uploadStatus === 'uploaded'
-                ? 'The document has been securely uploaded and is being processed.'
-                : 'The document has been securely uploaded and is ready.'}
-            </p>
+            <p className="font-semibold">Upload Complete</p>
+            <p className="mt-0.5">The document has been securely uploaded and is being analyzed.</p>
           </div>
         </div>
       )}

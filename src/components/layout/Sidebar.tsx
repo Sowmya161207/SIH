@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FileText, MessageSquare, Shield } from 'lucide-react';
+import { LayoutDashboard, FileText, MessageSquare, Shield, Activity, Lightbulb, AlertOctagon } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
@@ -11,6 +11,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'documents', label: 'Documents', icon: FileText },
     { id: 'chat', label: 'AI Assistant', icon: MessageSquare },
+    { id: 'equipment', label: 'Equipment Health', icon: Activity },
+    { id: 'suggestion', label: 'Suggestion Box', icon: Lightbulb },
+    { id: 'problem', label: 'Report a Problem', icon: AlertOctagon },
   ];
 
   return (

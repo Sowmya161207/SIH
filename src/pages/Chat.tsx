@@ -9,6 +9,8 @@ interface ChatProps {
   conversationId: string | null;
   sendMessage: (content: string) => void;
   clearConversation: () => void;
+  uploadFile?: (file: File) => Promise<any>;
+  isUploading?: boolean;
 }
 
 export const Chat: React.FC<ChatProps> = ({
@@ -18,6 +20,8 @@ export const Chat: React.FC<ChatProps> = ({
   conversationId,
   sendMessage,
   clearConversation,
+  uploadFile,
+  isUploading: isFileUploading,
 }) => {
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -35,6 +39,8 @@ export const Chat: React.FC<ChatProps> = ({
         conversationId={conversationId}
         onSendMessage={sendMessage}
         onClearConversation={clearConversation}
+        onUploadFile={uploadFile}
+        isUploading={isFileUploading}
       />
     </div>
   );

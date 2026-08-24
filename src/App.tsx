@@ -6,6 +6,9 @@ import Documents from './pages/Documents';
 import Chat from './pages/Chat';
 import SystemStatus from './pages/SystemStatus';
 import Login from './pages/Login';
+import EquipmentHealth from './pages/EquipmentHealth';
+import SuggestionBox from './pages/SuggestionBox';
+import ProblemBox from './pages/ProblemBox';
 import { useDocuments } from './hooks/useDocuments';
 import { useChat } from './hooks/useChat';
 
@@ -16,6 +19,11 @@ function App() {
   // Custom hooks
   const docState = useDocuments();
   const chatState = useChat();
+
+  const handleAskAI = (query: string) => {
+    setCurrentTab('chat');
+    chatState.sendMessage(query);
+  };
 
   const renderContent = () => {
     switch (currentTab) {
@@ -47,8 +55,16 @@ function App() {
             conversationId={chatState.conversationId}
             sendMessage={chatState.sendMessage}
             clearConversation={chatState.clearConversation}
+            uploadFile={docState.uploadFile}
+            isUploading={docState.isUploading}
           />
         );
+      case 'equipment':
+        return <EquipmentHealth onAskAI={handleAskAI} />;
+      case 'suggestion':
+        return <SuggestionBox />;
+      case 'problem':
+        return <ProblemBox />;
       case 'system':
         return <SystemStatus />;
       default:

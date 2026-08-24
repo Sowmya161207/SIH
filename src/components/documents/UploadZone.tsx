@@ -27,8 +27,11 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
     setValidationError(null);
     clearUploadState();
 
-    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-      setValidationError('Only PDF documents are supported.');
+    const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.ppt', '.pptx', '.txt', '.doc', '.docx'];
+    const isAllowed = allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    
+    if (!isAllowed) {
+      setValidationError('Unsupported file format. Please upload PDF, Image, PowerPoint, Text, or Word documents.');
       return false;
     }
 
@@ -111,7 +114,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
 
   return (
     <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md max-w-2xl mx-auto">
-      <h2 className="text-base font-semibold text-slate-200 mb-4">Upload PDF Document</h2>
+      <h2 className="text-base font-semibold text-slate-200 mb-4">Upload Document</h2>
 
       {/* Drag & Drop Zone */}
       {!selectedFile && (
@@ -130,7 +133,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept=".pdf,application/pdf"
+            accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg,.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,.txt,text/plain,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             className="hidden"
           />
           <div className="flex flex-col items-center justify-center space-y-3">
@@ -139,9 +142,9 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             </div>
             <div>
               <p className="text-sm font-medium text-slate-300">
-                Drag and drop your PDF here, or <span className="text-indigo-400 font-semibold hover:text-indigo-300">browse</span>
+                Drag and drop your document here, or <span className="text-indigo-400 font-semibold hover:text-indigo-300">browse</span>
               </p>
-              <p className="text-xs text-slate-500 mt-1.5">PDF documents up to 20 MB</p>
+              <p className="text-xs text-slate-500 mt-1.5">Supported: PDF, Image, PPT, TXT, Word (up to 20 MB)</p>
             </div>
           </div>
         </div>

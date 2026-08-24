@@ -12,6 +12,8 @@ interface ChatWindowProps {
   conversationId: string | null;
   onSendMessage: (content: string) => void;
   onClearConversation: () => void;
+  onUploadFile?: (file: File) => Promise<any>;
+  isUploading?: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -21,6 +23,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
   onSendMessage,
   onClearConversation,
+  onUploadFile,
+  isUploading,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +97,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Input Box Area */}
       <div className="p-4 bg-[#0d131f] border-t border-[#1e293b] flex-shrink-0">
-        <ChatInput onSend={onSendMessage} disabled={isLoading} />
+        <ChatInput onSend={onSendMessage} disabled={isLoading} onUploadFile={onUploadFile} isUploading={isUploading} />
       </div>
     </div>
   );

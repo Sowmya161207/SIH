@@ -1,0 +1,111 @@
+import React, { useState } from 'react';
+import { Lightbulb, Send, CheckCircle2 } from 'lucide-react';
+
+export const SuggestionBox: React.FC = () => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Operations');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !description.trim()) return;
+    
+    // Simulate API submission
+    setIsSubmitted(true);
+    setTitle('');
+    setDescription('');
+    
+    // Reset success message after 5 seconds
+    setTimeout(() => setIsSubmitted(false), 5000);
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeIn max-w-2xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center">
+          <Lightbulb className="h-6 w-6 mr-3 text-amber-400" />
+          Suggestion Box
+        </h1>
+        <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+          Have an idea to improve our workplace, process, safety, or operations? Submit it below.
+        </p>
+      </div>
+
+      <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md">
+        {isSubmitted && (
+          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start space-x-3 text-emerald-400 animate-fadeIn">
+            <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm">Suggestion submitted successfully.</p>
+              <p className="text-xs mt-1 text-emerald-400/80">Thank you for helping us improve.</p>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-1.5">
+              Suggestion Title <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Brief summary of your idea"
+              required
+              className="w-full bg-[#090d16] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-slate-300 mb-1.5">
+              Category
+            </label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-[#090d16] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors appearance-none"
+            >
+              <option value="Operations">Operations</option>
+              <option value="Safety">Safety</option>
+              <option value="Human Resources">Human Resources</option>
+              <option value="Technology">Technology</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-1.5">
+              Suggestion Description <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe your suggestion in detail..."
+              required
+              rows={5}
+              className="w-full bg-[#090d16] border border-[#1e293b] rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              disabled={!title.trim() || !description.trim()}
+              className="flex items-center space-x-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg text-sm font-semibold transition-all shadow-md shadow-indigo-600/15 cursor-pointer"
+            >
+              <Send className="h-4 w-4" />
+              <span>Submit Suggestion</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default SuggestionBox;

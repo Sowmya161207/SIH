@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # 1. Frontend Web Workbench (Tharun)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: mrpl-sovereign-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - mrpl_airgap_network
+    restart: unless-stopped
+
+  # 2. Sovereign Backend API (Sharun)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: mrpl-sovereign-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - AIR_GAPPED_MODE=true
+      - REQUIRE_INTERNET=false
+      - LOCAL_MODEL_ENDPOINT=http://ollama:11434
+      - LOCAL_VECTOR_DB_URL=http://vectordb:6333
+      - UPLOAD_DIR=/app/data/uploads
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+    depends_on:
+      - ollama
+      - vectordb
+    networks:
+      - mrpl_airgap_network
+    restart: unless-stopped
+
+  # 3. Local Sovereign LLM Runtime (Ollama / vLLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mrpl-local-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - mrpl_airgap_network
+    restart: unless-stopped
+
+  # 4. Local Vector Database (Qdrant / Chroma)
+  vectordb:
+    image: qdrant/qdrant:latest
+    container_name: mrpl-local-vectordb
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - mrpl_airgap_network
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+    driver: local
+  qdrant_storage:
+    driver: local
+
+networks:
+  mrpl_airgap_network:
+    driver: bridge
+    # In production air-gapped refinery deployment, set internal: true to block WAN egress
+    # internal: true

@@ -13,5 +13,6 @@ env/
 venv/
 ENV/
 
-# Runtime Data
+# Runtime Data & Logs
 data/
+logs/

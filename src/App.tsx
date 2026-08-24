@@ -5,10 +5,14 @@ import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import Chat from './pages/Chat';
 import SystemStatus from './pages/SystemStatus';
+import Login from './pages/Login';
 import { useDocuments } from './hooks/useDocuments';
 import { useChat } from './hooks/useChat';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
   const [currentTab, setCurrentTab] = useState('dashboard');
   
   // Custom hooks
@@ -59,6 +63,10 @@ function App() {
         );
     }
   };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="flex h-screen w-screen bg-[#0b0f19] text-slate-100 overflow-hidden select-none">

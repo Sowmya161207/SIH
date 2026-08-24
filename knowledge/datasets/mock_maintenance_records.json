@@ -1,0 +1,46 @@
+[
+  {
+    "work_order_id": "WO-MRPL-2026-0814",
+    "equipment_tag": "P-101A",
+    "unit": "CDU-1",
+    "date": "2026-06-15",
+    "maintenance_type": "PREVENTIVE",
+    "technician": "Rajesh Kumar (Rotating Equipment Tech)",
+    "description": "Quarterly lube oil replenishment and vibration spectrum analysis.",
+    "findings": "Drive-end bearing clearance measured 0.08 mm (nominal 0.04 - 0.06 mm). Minor bronze flaking observed in magnetic drain plug. Scheduled for bearing replacement on upcoming turnaround.",
+    "status": "COMPLETED_WITH_OBSERVATIONS"
+  },
+  {
+    "work_order_id": "WO-MRPL-2026-0922",
+    "equipment_tag": "P-204",
+    "unit": "VGO-HT",
+    "date": "2026-07-20",
+    "maintenance_type": "CORRECTIVE",
+    "technician": "S. Narayana (Mechanical Seal Specialist)",
+    "description": "Inspection following low barrier fluid level alarm on Plan 53A pot.",
+    "findings": "Primary silicon-carbide stationary face found cracked due to thermal shock. Replaced seal cartridge with John Crane Type 5620. Passed 6.0 bar nitrogen hold test with zero leakage.",
+    "status": "RESOLVED"
+  },
+  {
+    "work_order_id": "WO-MRPL-2026-1045",
+    "equipment_tag": "K-101",
+    "unit": "FCCU",
+    "date": "2026-08-02",
+    "maintenance_type": "CALIBRATION",
+    "technician": "P. Sharma (Instrumentation Lead)",
+    "description": "Bently Nevada 3500 proximity probe vibration calibration and anti-surge stroke test.",
+    "findings": "X-Y radial probes recalibrated. Anti-surge fast-opening time measured 1.1 seconds (compliant with <1.5s requirement). Zero shaft rub detected.",
+    "status": "PASS"
+  },
+  {
+    "work_order_id": "WO-MRPL-2026-1110",
+    "equipment_tag": "V-402",
+    "unit": "Utilities",
+    "date": "2026-08-18",
+    "maintenance_type": "INSPECTION",
+    "technician": "Anand V. (Control Valve Technician)",
+    "description": "Diagnostic check on Fisher DVC6200 digital valve controller.",
+    "findings": "Found instrument air regulator filter clogged with moisture and rust scale, dropping supply from 4.5 bar to 2.8 bar. Cleaned air filter and lubricated packing. Stroke response restored.",
+    "status": "RESOLVED"
+  }
+]

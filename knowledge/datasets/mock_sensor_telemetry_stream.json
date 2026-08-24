@@ -1,0 +1,148 @@
+[
+  {
+    "telemetry_id": "TEL-CDU-P101A-001",
+    "timestamp": "2026-08-24T07:00:00Z",
+    "unit": "CDU-1",
+    "equipment_tag": "P-101A",
+    "equipment_name": "Crude Distillation Feed Pump A",
+    "parameters": {
+      "vibration_drive_end_mms": 1.45,
+      "vibration_non_drive_end_mms": 1.30,
+      "bearing_temp_c": 68.2,
+      "motor_winding_temp_c": 74.5,
+      "suction_pressure_bar": 2.1,
+      "discharge_pressure_bar": 12.4,
+      "flow_rate_m3h": 340.0,
+      "motor_current_a": 142.0,
+      "lube_oil_pressure_bar": 3.2,
+      "lube_oil_temp_c": 44.0
+    },
+    "operating_state": "RUNNING_NORMAL",
+    "alarm_status": "NORMAL",
+    "simulated_fault": null
+  },
+  {
+    "telemetry_id": "TEL-CDU-P101A-002",
+    "timestamp": "2026-08-24T07:15:00Z",
+    "unit": "CDU-1",
+    "equipment_tag": "P-101A",
+    "equipment_name": "Crude Distillation Feed Pump A",
+    "parameters": {
+      "vibration_drive_end_mms": 4.85,
+      "vibration_non_drive_end_mms": 3.90,
+      "bearing_temp_c": 98.4,
+      "motor_winding_temp_c": 118.5,
+      "suction_pressure_bar": 1.9,
+      "discharge_pressure_bar": 11.2,
+      "flow_rate_m3h": 315.0,
+      "motor_current_a": 158.0,
+      "lube_oil_pressure_bar": 2.4,
+      "lube_oil_temp_c": 56.5
+    },
+    "operating_state": "DEGRADED",
+    "alarm_status": "HIGH_VIBRATION_ALARM",
+    "simulated_fault": "Bearing Inner Race Degradation"
+  },
+  {
+    "telemetry_id": "TEL-VGO-P204-001",
+    "timestamp": "2026-08-24T07:00:00Z",
+    "unit": "VGO-HT",
+    "equipment_tag": "P-204",
+    "equipment_name": "VGO Hydrotreater Booster Pump",
+    "parameters": {
+      "vibration_drive_end_mms": 1.10,
+      "vibration_non_drive_end_mms": 1.05,
+      "bearing_temp_c": 62.0,
+      "motor_winding_temp_c": 68.0,
+      "suction_pressure_bar": 4.5,
+      "discharge_pressure_bar": 28.0,
+      "seal_barrier_fluid_pressure_bar": 29.5,
+      "seal_pot_level_pct": 82.0,
+      "motor_current_a": 195.0
+    },
+    "operating_state": "RUNNING_NORMAL",
+    "alarm_status": "NORMAL",
+    "simulated_fault": null
+  },
+  {
+    "telemetry_id": "TEL-VGO-P204-002",
+    "timestamp": "2026-08-24T07:30:00Z",
+    "unit": "VGO-HT",
+    "equipment_tag": "P-204",
+    "equipment_name": "VGO Hydrotreater Booster Pump",
+    "parameters": {
+      "vibration_drive_end_mms": 1.25,
+      "vibration_non_drive_end_mms": 1.15,
+      "bearing_temp_c": 64.5,
+      "motor_winding_temp_c": 70.2,
+      "suction_pressure_bar": 4.5,
+      "discharge_pressure_bar": 27.8,
+      "seal_barrier_fluid_pressure_bar": 24.0,
+      "seal_pot_level_pct": 35.0,
+      "motor_current_a": 194.0
+    },
+    "operating_state": "DEGRADED",
+    "alarm_status": "LOW_BARRIER_PRESSURE_ALARM",
+    "simulated_fault": "Plan 53A Primary Mechanical Seal Leak"
+  },
+  {
+    "telemetry_id": "TEL-FCC-K101-001",
+    "timestamp": "2026-08-24T08:00:00Z",
+    "unit": "FCCU",
+    "equipment_tag": "K-101",
+    "equipment_name": "Wet Gas Compressor Multi-Stage",
+    "parameters": {
+      "axial_displacement_mm": 0.08,
+      "vibration_radial_x_mms": 1.80,
+      "vibration_radial_y_mms": 1.75,
+      "suction_mass_flow_kg_h": 42500.0,
+      "suction_pressure_bar": 1.2,
+      "discharge_pressure_bar": 14.8,
+      "thrust_bearing_temp_c": 78.0,
+      "lube_oil_supply_temp_c": 42.0,
+      "anti_surge_valve_pct": 0.0
+    },
+    "operating_state": "RUNNING_NORMAL",
+    "alarm_status": "NORMAL",
+    "simulated_fault": null
+  },
+  {
+    "telemetry_id": "TEL-FCC-K101-002",
+    "timestamp": "2026-08-24T08:20:00Z",
+    "unit": "FCCU",
+    "equipment_tag": "K-101",
+    "equipment_name": "Wet Gas Compressor Multi-Stage",
+    "parameters": {
+      "axial_displacement_mm": 0.38,
+      "vibration_radial_x_mms": 5.95,
+      "vibration_radial_y_mms": 6.10,
+      "suction_mass_flow_kg_h": 13200.0,
+      "suction_pressure_bar": 0.95,
+      "discharge_pressure_bar": 12.1,
+      "thrust_bearing_temp_c": 112.5,
+      "lube_oil_supply_temp_c": 52.0,
+      "anti_surge_valve_pct": 18.0
+    },
+    "operating_state": "CRITICAL_SURGE",
+    "alarm_status": "SURGE_AND_HIGH_VIBRATION_TRIP",
+    "simulated_fault": "Incipient Compressor Surge & Thrust Bearing Overheat"
+  },
+  {
+    "telemetry_id": "TEL-UTL-V402-001",
+    "timestamp": "2026-08-24T08:30:00Z",
+    "unit": "Utilities",
+    "equipment_tag": "V-402",
+    "equipment_name": "Cooling Water Bypass Control Valve",
+    "parameters": {
+      "setpoint_pct": 15.0,
+      "actual_position_pct": 42.5,
+      "air_supply_pressure_bar": 2.8,
+      "positioner_error_pct": 27.5,
+      "upstream_pressure_bar": 5.2,
+      "downstream_pressure_bar": 4.8
+    },
+    "operating_state": "FAULT",
+    "alarm_status": "POSITIONER_DEVIATION_ALARM",
+    "simulated_fault": "Low Instrument Air Supply / Valve Actuator Stiction"
+  }
+]

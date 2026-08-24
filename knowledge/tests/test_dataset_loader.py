@@ -37,5 +37,36 @@ class TestMetroPTDatasetLoader(unittest.TestCase):
         self.assertGreater(len(verification_res["supporting_evidence"]), 0)
 
 
+    def test_synthetic_telemetry_generator(self):
+        """Test generating synthetic telemetry stream with injected faults."""
+        from knowledge.datasets.mock_synthetic_generator import generate_synthetic_telemetry
+        records = generate_synthetic_telemetry(num_samples=30, inject_anomaly_at_index=20, anomaly_type="bearing_degradation")
+        self.assertEqual(len(records), 30)
+        self.assertEqual(records[0]["anomaly_flag"], 0)
+        self.assertEqual(records[-1]["anomaly_flag"], 1)
+        self.assertEqual(records[-1]["failure_label"], "Bearing Degradation")
+        self.assertGreater(records[-1]["vibration_rms_mms"], records[0]["vibration_rms_mms"])
+
+    def test_mock_datasets_exist(self):
+        """Verify presence and validity of mock telemetry and maintenance datasets."""
+        import os
+        import json
+        telemetry_path = os.path.join(os.path.dirname(__file__), "..", "datasets", "mock_sensor_telemetry_stream.json")
+        maint_path = os.path.join(os.path.dirname(__file__), "..", "datasets", "mock_maintenance_records.json")
+
+        self.assertTrue(os.path.exists(telemetry_path))
+        self.assertTrue(os.path.exists(maint_path))
+
+        with open(telemetry_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            self.assertGreater(len(data), 0)
+            self.assertIn("parameters", data[0])
+
+        with open(maint_path, "r", encoding="utf-8") as f:
+            maint_data = json.load(f)
+            self.assertGreater(len(maint_data), 0)
+            self.assertIn("work_order_id", maint_data[0])
+
+
 if __name__ == "__main__":
     unittest.main()

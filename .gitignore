@@ -13,8 +13,5 @@ env/
 venv/
 ENV/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Runtime Data
+data/

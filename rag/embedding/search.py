@@ -1,73 +1,94 @@
-import os
+import argparse
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 import chromadb
+import ollama
+import sys
 
-# Configuration
+# Automatically resolve paths
 SCRIPT_DIR = Path(__file__).resolve().parent
-CHROMA_DB_PATH = SCRIPT_DIR.parent / "chroma_db"
-MODEL_NAME = "all-MiniLM-L6-v2"
+PROJECT_ROOT = SCRIPT_DIR.parent.parent
+CHROMA_DB_PATH = PROJECT_ROOT / "rag" / "chroma_db"
 
-def search():
-    """Interactive search using local ChromaDB and SentenceTransformer."""
+def main():
+    parser = argparse.ArgumentParser(description="Search the MRPL local RAG Vector DB and Generate Answer with LLaMA 3.")
+    parser.add_argument("query", type=str, nargs='?', help="Your search query")
+    args = parser.parse_args()
+    
+    query_text = args.query
+    if not query_text:
+        query_text = input("Enter your search query: ")
+
+    if not query_text.strip():
+        print("Empty query. Exiting.")
+        return
+
     if not CHROMA_DB_PATH.exists():
-        print(f"Error: Vector database not found at {CHROMA_DB_PATH}")
+        print(f"\n[ERROR] Database not found at {CHROMA_DB_PATH}")
         print("Please run create_embeddings.py first.")
         return
 
-    print("Loading local embedding model...")
-    model = SentenceTransformer(MODEL_NAME)
+    # 1. RETRIEVAL STEP
+    print("\n[1/2] Loading embedding model 'all-MiniLM-L6-v2' and connecting to ChromaDB...")
+    model = SentenceTransformer('all-MiniLM-L6-v2')
     
-    print("Connecting to local ChromaDB...")
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
-    try:
-        collection = chroma_client.get_collection(name="sih_documents")
-    except Exception as e:
-        print(f"Error: Could not find 'sih_documents' collection. Details: {e}")
+    collection = chroma_client.get_collection(name="mrpl_rag_collection")
+
+    query_embedding = model.encode([query_text], convert_to_numpy=True).tolist()
+    
+    results = collection.query(
+        query_embeddings=query_embedding,
+        n_results=5,
+        include=['documents', 'metadatas', 'distances']
+    )
+    
+    if not results['ids'][0]:
+        print("No results found in ChromaDB.")
         return
 
-    print("\n--- Local RAG Search ---")
-    print("Type 'exit' or 'quit' to stop.")
+    # Extract retrieved texts to form the context
+    retrieved_texts = results['documents'][0]
+    context = "\n\n".join([f"--- Chunk {i+1} ---\n{text}" for i, text in enumerate(retrieved_texts)])
     
-    while True:
-        query = input("\nEnter your search query: ").strip()
-        if not query:
-            continue
-        if query.lower() in ['exit', 'quit']:
-            print("Exiting search. Goodbye!")
-            break
-            
-        print(f"\nSearching for: '{query}'...")
-        # 1. Embed query
-        query_embedding = model.encode(query).tolist()
-        
-        # 2. Query vector DB
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=5,
-            include=['documents', 'metadatas', 'distances']
+    print("\n" + "="*60)
+    print("                  TOP RETRIEVED CONTEXT")
+    print("="*60)
+    for i, (doc, dist) in enumerate(zip(results['documents'][0], results['distances'][0])):
+        print(f"\nResult {i+1} (Distance: {dist:.4f}):\n{doc[:200]}...") # Print preview
+
+    # 2. GENERATION STEP (LLaMA via Ollama)
+    print("\n" + "="*60)
+    print("             LLaMA 3 GENERATING ANSWER...")
+    print("="*60 + "\n")
+    
+    prompt = f"""You are an expert AI assistant for MRPL (Mangalore Refinery and Petrochemicals Limited).
+Use ONLY the following context to answer the user's question. If the context does not contain the answer, simply state "I don't have enough information to answer this based on the provided documents." Do not use outside knowledge.
+
+Context:
+{context}
+
+Question: {query_text}
+
+Answer:"""
+
+    try:
+        response = ollama.chat(
+            model='llama3',
+            messages=[{'role': 'user', 'content': prompt}],
+            stream=True
         )
         
-        if not results['documents'] or not results['documents'][0]:
-            print("No results found.")
-            continue
+        # Stream the response to the terminal
+        for chunk in response:
+            sys.stdout.write(chunk['message']['content'])
+            sys.stdout.flush()
             
-        print("\n--- Top 5 Relevant Chunks ---")
-        # 3. Display results
-        documents = results['documents'][0]
-        metadatas = results['metadatas'][0]
-        distances = results['distances'][0]
-        
-        for idx, (doc, meta, dist) in enumerate(zip(documents, metadatas, distances), 1):
-            # Chroma returns cosine distance by default if configured, where distance = 1 - similarity
-            # We assume cosine distance is used here as configured in create_embeddings.py
-            similarity = max(0.0, 1.0 - dist)
+        print("\n\n" + "="*60)
             
-            print(f"\nResult {idx} (Similarity: {similarity:.4f})")
-            print(f"Source: {meta.get('source', 'Unknown')}")
-            print(f"Chunk ID: {meta.get('chunk_id', 'Unknown')}")
-            print(f"Text: {doc}")
-            print("-" * 40)
+    except Exception as e:
+        print(f"\n[ERROR] Failed to connect to Ollama: {e}")
+        print("Please ensure you have installed Ollama and run 'ollama run llama3' in a separate terminal.")
 
 if __name__ == "__main__":
-    search()
+    main()

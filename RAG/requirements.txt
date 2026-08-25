@@ -1,0 +1,21 @@
+# RAG Pipeline Dependencies — MRPL Sovereign AI Workbench
+# SIH26117 | Team: Meenaloshini (RAG Engineer)
+
+# ── PDF extraction ─────────────────────────────────────────────────────────────
+PyMuPDF>=1.23.0             # fitz — fast, local PDF text extraction
+
+# ── Embeddings (local model, no cloud) ────────────────────────────────────────
+sentence-transformers>=2.6.0  # all-MiniLM-L6-v2 — 80MB, CPU-friendly
+torch>=2.0.0                  # Required by sentence-transformers (CPU build is fine)
+
+# ── Vector database ────────────────────────────────────────────────────────────
+chromadb>=0.5.0               # Local ChromaDB, persistent, no server needed
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+numpy>=1.24.0
+
+# ── Demo PDF generation ────────────────────────────────────────────────────────
+reportlab>=4.0.0              # Used only by data/demo/generate_demo_docs.py
+
+# ── Testing ────────────────────────────────────────────────────────────────────
+pytest>=7.4.0

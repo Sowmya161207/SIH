@@ -24,102 +24,182 @@ export const TextInputZone: React.FC<TextInputZoneProps> = ({
     e.preventDefault();
     setValidationError(null);
     clearSubmitState();
-
-    if (!title.trim()) {
-      setValidationError('Please enter a title for this information.');
-      return;
-    }
-
-    if (!content.trim()) {
-      setValidationError('Please enter the text content.');
-      return;
-    }
-
+    if (!title.trim()) { setValidationError('Please enter a title.'); return; }
+    if (!content.trim()) { setValidationError('Please enter the text content.'); return; }
     try {
       await onSubmitText(title, content);
       setTitle('');
       setContent('');
-    } catch (e) {
-      // Error handled by hook state
-    }
+    } catch (e) { /* handled by hook */ }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(10, 15, 26, 0.6)',
+    border: '1px solid rgba(148, 163, 184, 0.08)',
+    borderRadius: '8px',
+    padding: '9px 12px',
+    color: '#e2e8f0',
+    fontSize: '13px',
+    outline: 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+    fontFamily: 'Inter, sans-serif',
   };
 
   return (
-    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md max-w-2xl mx-auto w-full flex flex-col">
-      <div className="flex items-center mb-4 text-slate-200">
-        <h2 className="text-base font-semibold">Direct Text Input</h2>
+    <div
+      style={{
+        background: '#0f172a',
+        border: '1px solid rgba(148, 163, 184, 0.08)',
+        borderRadius: '12px',
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column' as const,
+      }}
+    >
+      <div
+        className="mb-4"
+        style={{
+          fontSize: '9px',
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase' as const,
+          color: 'rgba(148, 163, 184, 0.4)',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
+        Direct Text Input
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1">
-        <div className="space-y-4 flex-1 flex flex-col">
-          <div>
-            <label htmlFor="textTitle" className="block text-sm font-medium text-slate-300 mb-1.5">
-              Title
-            </label>
-            <input
-              type="text"
-              id="textTitle"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Employee Handbook Excerpt"
-              className="w-full bg-[#090d16] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="flex-1 flex flex-col min-h-[200px]">
-            <label htmlFor="textContent" className="block text-sm font-medium text-slate-300 mb-1.5">
-              Text Content
-            </label>
-            <textarea
-              id="textContent"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Type or paste information here..."
-              className="w-full flex-1 bg-[#090d16] border border-[#1e293b] rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-y min-h-[150px]"
-              disabled={isSubmitting}
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 space-y-3">
+        <div>
+          <label
+            htmlFor="textTitle"
+            style={{
+              display: 'block',
+              fontSize: '10px',
+              fontWeight: 600,
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.08em',
+              color: 'rgba(148, 163, 184, 0.4)',
+              marginBottom: '6px',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            Title
+          </label>
+          <input
+            type="text"
+            id="textTitle"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Safety Procedures - Section 3"
+            style={inputStyle}
+            disabled={isSubmitting}
+            onFocus={(e) => {
+              (e.target as HTMLInputElement).style.borderColor = 'rgba(99, 102, 241, 0.3)';
+              (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.07)';
+            }}
+            onBlur={(e) => {
+              (e.target as HTMLInputElement).style.borderColor = 'rgba(148, 163, 184, 0.08)';
+              (e.target as HTMLInputElement).style.boxShadow = 'none';
+            }}
+          />
         </div>
 
-        {/* Validation or API Errors */}
+        <div className="flex-1 flex flex-col">
+          <label
+            htmlFor="textContent"
+            style={{
+              display: 'block',
+              fontSize: '10px',
+              fontWeight: 600,
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.08em',
+              color: 'rgba(148, 163, 184, 0.4)',
+              marginBottom: '6px',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            Content
+          </label>
+          <textarea
+            id="textContent"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Paste or type document content here..."
+            style={{
+              ...inputStyle,
+              minHeight: '120px',
+              resize: 'vertical' as const,
+              lineHeight: 1.6,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '12px',
+            }}
+            disabled={isSubmitting}
+            onFocus={(e) => {
+              (e.target as HTMLTextAreaElement).style.borderColor = 'rgba(99, 102, 241, 0.3)';
+              (e.target as HTMLTextAreaElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.07)';
+            }}
+            onBlur={(e) => {
+              (e.target as HTMLTextAreaElement).style.borderColor = 'rgba(148, 163, 184, 0.08)';
+              (e.target as HTMLTextAreaElement).style.boxShadow = 'none';
+            }}
+          />
+        </div>
+
         {(validationError || submitError) && (
-          <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-start space-x-2 text-rose-400 text-xs animate-fadeIn">
-            <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold">Error processing text</p>
-              <p className="mt-0.5">{validationError || submitError}</p>
-            </div>
+          <div
+            className="flex items-start gap-2 animate-fadeIn"
+            style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(244, 63, 94, 0.06)',
+              border: '1px solid rgba(244, 63, 94, 0.12)',
+            }}
+          >
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style={{ color: '#fb7185' }} />
+            <p className="text-xs" style={{ color: 'rgba(251, 113, 133, 0.8)' }}>{validationError || submitError}</p>
           </div>
         )}
 
-        {/* Success Alert */}
         {submitSuccess && (
-          <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start space-x-2 text-emerald-400 text-xs animate-fadeIn">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold">Text Added</p>
-              <p className="mt-0.5">The text has been submitted and is being analyzed.</p>
-            </div>
+          <div
+            className="flex items-start gap-2 animate-fadeIn"
+            style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.06)',
+              border: '1px solid rgba(16, 185, 129, 0.12)',
+            }}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style={{ color: '#34d399' }} />
+            <p className="text-xs" style={{ color: 'rgba(52, 211, 153, 0.8)' }}>Text indexed successfully.</p>
           </div>
         )}
 
-        <div className="mt-5 flex justify-end">
+        <div className="flex justify-end pt-1">
           <button
             type="submit"
             disabled={!title.trim() || !content.trim() || isSubmitting}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800/50 disabled:text-slate-500 rounded-lg text-xs font-semibold text-white transition-all flex items-center space-x-1.5 shadow-md shadow-indigo-600/15 cursor-pointer"
+            className="cursor-pointer flex items-center gap-1.5"
+            style={{
+              padding: '7px 16px',
+              borderRadius: '7px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+              border: 'none',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 600,
+              boxShadow: '0 2px 12px rgba(99, 102, 241, 0.25)',
+              opacity: (!title.trim() || !content.trim() || isSubmitting) ? 0.5 : 1,
+              transition: 'opacity 0.15s ease',
+            }}
           >
             {isSubmitting ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>Processing...</span>
-              </>
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span>Processing...</span></>
             ) : (
-              <>
-                <Type className="h-3.5 w-3.5" />
-                <span>Add Text to Knowledge</span>
-              </>
+              <><Type className="h-3.5 w-3.5" /><span>Add to Knowledge</span></>
             )}
           </button>
         </div>
@@ -127,5 +207,4 @@ export const TextInputZone: React.FC<TextInputZoneProps> = ({
     </div>
   );
 };
-
 export default TextInputZone;

@@ -1,9 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { Message } from '../../types/chat';
+import { ReportRecord } from '../../types/reports';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ChatLoading from './ChatLoading';
-import { Trash2, AlertTriangle, Sparkles } from 'lucide-react';
+import { Trash2, AlertTriangle, Cpu } from 'lucide-react';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -14,6 +15,7 @@ interface ChatWindowProps {
   onClearConversation: () => void;
   onUploadFile?: (file: File) => Promise<any>;
   isUploading?: boolean;
+  onGenerateReport?: (record: ReportRecord) => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -25,69 +27,196 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onClearConversation,
   onUploadFile,
   isUploading,
+  onGenerateReport,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, error]);
 
   return (
-    <div className="bg-[#0f172a]/20 border border-[#1e293b] rounded-xl flex flex-col h-[calc(100vh-12rem)] shadow-md overflow-hidden">
-      {/* Chat Window Header */}
-      <div className="px-6 py-4 bg-[#0d131f] border-b border-[#1e293b] flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+    <div
+      className="flex flex-col h-full"
+      style={{ background: '#060810' }}
+    >
+      {/* Chat Header */}
+      <div
+        className="flex items-center justify-between px-6 py-3 flex-shrink-0"
+        style={{
+          background: '#0a0f1a',
+          borderBottom: '1px solid rgba(148, 163, 184, 0.06)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="h-7 w-7 rounded-md flex items-center justify-center"
+            style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.15)' }}
+          >
+            <Cpu className="h-3.5 w-3.5" style={{ color: '#818cf8' }} />
+          </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">Sovereign Assistant Session</h3>
+            <div className="text-[13px] font-semibold" style={{ color: '#e2e8f0', letterSpacing: '-0.01em' }}>
+              Sovereign AI Assistant
+            </div>
             {conversationId && (
-              <p className="text-[10px] font-mono text-slate-500 mt-0.5">CID: {conversationId}</p>
+              <div
+                className="text-[9px] mt-0.5"
+                style={{
+                  color: 'rgba(148, 163, 184, 0.3)',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.04em',
+                }}
+              >
+                session:{' '}
+                <span style={{ color: 'rgba(148, 163, 184, 0.45)' }}>
+                  {conversationId.slice(0, 16)}...
+                </span>
+              </div>
             )}
           </div>
         </div>
+
         {messages.length > 0 && (
           <button
             onClick={onClearConversation}
-            className="flex items-center space-x-1.5 px-3 py-1.5 border border-[#1e293b] hover:border-rose-500/30 hover:bg-rose-500/5 text-slate-400 hover:text-rose-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-            title="Start new conversation"
+            className="flex items-center gap-1.5 cursor-pointer"
+            style={{
+              padding: '5px 10px',
+              borderRadius: '6px',
+              background: 'transparent',
+              border: '1px solid rgba(148, 163, 184, 0.08)',
+              color: 'rgba(148, 163, 184, 0.4)',
+              fontSize: '11px',
+              fontWeight: 500,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(244, 63, 94, 0.06)';
+              (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(244, 63, 94, 0.15)';
+              (e.currentTarget as HTMLButtonElement).style.color = '#fb7185';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(148, 163, 184, 0.08)';
+              (e.currentTarget as HTMLButtonElement).style.color = 'rgba(148, 163, 184, 0.4)';
+            }}
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Reset Chat</span>
+            <Trash2 className="h-3 w-3" />
+            <span>New session</span>
           </button>
         )}
       </div>
 
-      {/* Message History Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+      {/* Message Area */}
+      <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="p-4 bg-indigo-500/10 text-indigo-400 rounded-2xl mb-4 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-              <Sparkles className="h-7 w-7" />
+          <div
+            className="h-full flex flex-col items-center justify-center text-center"
+            style={{ padding: '64px 32px' }}
+          >
+            {/* Empty state */}
+            <div
+              className="h-16 w-16 rounded-2xl flex items-center justify-center mb-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(124,58,237,0.06) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+                boxShadow: '0 0 40px rgba(99, 102, 241, 0.08)',
+              }}
+            >
+              <Cpu className="h-7 w-7" style={{ color: '#818cf8' }} />
             </div>
-            <h4 className="text-sm font-semibold text-slate-300">Secure On-Premise Assistant</h4>
-            <p className="text-xs text-slate-500 max-w-sm mt-1">
-              Ask questions about the uploaded and indexed documents. All data remains in your local secure container.
+            <h3
+              className="font-bold mb-2"
+              style={{ color: '#e2e8f0', fontSize: '16px', letterSpacing: '-0.02em' }}
+            >
+              Sovereign Intelligence Layer
+            </h3>
+            <p
+              className="max-w-sm"
+              style={{ color: 'rgba(148, 163, 184, 0.45)', fontSize: '13px', lineHeight: 1.6 }}
+            >
+              Ask questions about indexed documents. Your queries are processed
+              entirely within your secure on-premise enclave.
             </p>
+
+            {/* Prompt suggestions */}
+            <div className="mt-8 space-y-2 w-full max-w-sm">
+              {[
+                'Summarize the key findings from indexed documents',
+                'What are the main topics covered?',
+                'Find information about...',
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => onSendMessage(prompt)}
+                  className="w-full text-left cursor-pointer"
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(148, 163, 184, 0.03)',
+                    border: '1px solid rgba(148, 163, 184, 0.07)',
+                    color: 'rgba(148, 163, 184, 0.5)',
+                    fontSize: '12px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(99, 102, 241, 0.05)';
+                    (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(99, 102, 241, 0.12)';
+                    (e.currentTarget as HTMLButtonElement).style.color = 'rgba(148, 163, 184, 0.7)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(148, 163, 184, 0.03)';
+                    (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(148, 163, 184, 0.07)';
+                    (e.currentTarget as HTMLButtonElement).style.color = 'rgba(148, 163, 184, 0.5)';
+                  }}
+                >
+                  "{prompt}"
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div>
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
-            ))}
+            {messages.map((msg, idx) => {
+              // Find the preceding user message to use as the query for report titles
+              const prevUser = idx > 0 && messages[idx - 1].role === 'user'
+                ? messages[idx - 1].content
+                : '';
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  previousUserQuery={prevUser}
+                  onGenerateReport={onGenerateReport}
+                />
+              );
+            })}
           </div>
         )}
 
-        {/* Loading Indicator */}
+        {/* Loading */}
         {isLoading && <ChatLoading />}
 
-        {/* Error State */}
+        {/* Error */}
         {error && (
-          <div className="my-4 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start space-x-2.5 text-rose-400 text-xs max-w-[85%]">
-            <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+          <div
+            className="mx-6 my-3 flex items-start gap-3 animate-fadeIn"
+            style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: 'rgba(244, 63, 94, 0.06)',
+              border: '1px solid rgba(244, 63, 94, 0.15)',
+            }}
+          >
+            <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: '#fb7185' }} />
             <div>
-              <p className="font-semibold">Query Failed</p>
-              <p className="mt-0.5">{error}</p>
+              <div className="text-xs font-semibold" style={{ color: '#fb7185' }}>
+                Query Failed
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: 'rgba(251, 113, 133, 0.7)' }}>
+                {error}
+              </div>
             </div>
           </div>
         )}
@@ -95,9 +224,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div ref={bottomRef} />
       </div>
 
-      {/* Input Box Area */}
-      <div className="p-4 bg-[#0d131f] border-t border-[#1e293b] flex-shrink-0">
-        <ChatInput onSend={onSendMessage} disabled={isLoading} onUploadFile={onUploadFile} isUploading={isUploading} />
+      {/* Input Area */}
+      <div
+        className="flex-shrink-0"
+        style={{
+          padding: '16px 24px 20px',
+          background: '#0a0f1a',
+          borderTop: '1px solid rgba(148, 163, 184, 0.06)',
+        }}
+      >
+        <ChatInput
+          onSend={onSendMessage}
+          disabled={isLoading}
+          onUploadFile={onUploadFile}
+          isUploading={isUploading}
+        />
       </div>
     </div>
   );

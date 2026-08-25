@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Shield, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (role: 'admin' | 'employee') => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -14,79 +14,211 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    // Empty field validation
     if (!username.trim() || !password.trim()) {
       setError('Please enter both username and password.');
       return;
     }
-
     setIsLoading(true);
-
-    // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Minimal frontend-only login validation
-    // For this demo, let's accept demo/demo or admin/admin
-    if ((username === 'admin' && password === 'admin') || 
-        (username === 'demo' && password === 'demo')) {
-      onLogin();
+    if (username === 'admin' && password === 'admin') {
+      onLogin('admin');
+    } else if ((username === 'employee' && password === 'employee') ||
+               (username === 'demo' && password === 'demo')) {
+      onLogin('employee');
     } else {
-      setError('Invalid username or password. Try admin/admin');
+      setError('Invalid credentials. Try admin/admin or employee/employee');
       setIsLoading(false);
     }
   };
 
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(6, 8, 16, 0.8)',
+    border: '1px solid rgba(148, 163, 184, 0.1)',
+    borderRadius: '10px',
+    padding: '11px 14px 11px 40px',
+    color: '#e2e8f0',
+    fontSize: '13.5px',
+    outline: 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+    caretColor: '#818cf8',
+  };
+
   return (
-    <div className="flex h-screen w-screen bg-[#0b0f19] text-slate-100 overflow-hidden items-center justify-center select-none">
-      <div className="w-full max-w-md p-8 bg-[#0f172a] border border-[#1e293b] rounded-2xl shadow-2xl relative overflow-hidden">
-        {/* Decorative background element */}
-        <div className="absolute -right-20 -top-20 h-64 w-64 bg-radial-gradient from-indigo-500/20 to-transparent pointer-events-none rounded-full blur-3xl"></div>
-        
-        <div className="relative z-10 flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] mb-4">
-            <Shield className="h-8 w-8" />
+    <div
+      className="flex h-screen w-screen items-center justify-center"
+      style={{ background: '#060810', position: 'relative', overflow: 'hidden' }}
+    >
+      {/* Background grid */}
+      <div className="absolute inset-0 bg-grid opacity-60" style={{ pointerEvents: 'none' }} />
+
+      {/* Glow orbs */}
+      <div
+        className="absolute"
+        style={{
+          top: '-200px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '600px',
+          height: '400px',
+          background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.08) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Login card */}
+      <div
+        className="relative w-full"
+        style={{
+          maxWidth: '400px',
+          background: '#0a0f1a',
+          border: '1px solid rgba(148, 163, 184, 0.09)',
+          borderRadius: '16px',
+          padding: '40px',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99, 102, 241, 0.04)',
+        }}
+      >
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+          <div
+            className="h-14 w-14 rounded-2xl flex items-center justify-center mb-5"
+            style={{
+              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+              boxShadow: '0 0 32px rgba(99, 102, 241, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
+            }}
+          >
+            <Shield className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Sovereign AI</h1>
-          <p className="text-xs text-slate-400 font-mono mt-1 tracking-widest uppercase">Secure Enclave Access</p>
+          <h1
+            style={{
+              fontSize: '20px',
+              fontWeight: 800,
+              color: '#f1f5f9',
+              letterSpacing: '-0.025em',
+            }}
+          >
+            Sovereign AI
+          </h1>
+          <p
+            className="mt-1"
+            style={{
+              fontSize: '10px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'rgba(148, 163, 184, 0.35)',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            Secure Enclave Access
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="relative z-10 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start space-x-2 animate-fadeIn">
-              <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-              <span className="text-sm text-red-300">{error}</span>
+            <div
+              className="flex items-start gap-2 animate-fadeIn"
+              style={{
+                padding: '10px 12px',
+                borderRadius: '8px',
+                background: 'rgba(244, 63, 94, 0.06)',
+                border: '1px solid rgba(244, 63, 94, 0.15)',
+              }}
+            >
+              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: '#fb7185' }} />
+              <span style={{ fontSize: '12px', color: 'rgba(251, 113, 133, 0.8)' }}>{error}</span>
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Username / Email</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                <User className="h-5 w-5" />
+          {/* Username */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '10px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'rgba(148, 163, 184, 0.4)',
+                marginBottom: '7px',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              Username
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '13px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgba(148, 163, 184, 0.3)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <User className="h-4 w-4" />
               </div>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-[#090d16] border border-[#1e293b] focus:border-indigo-500/50 rounded-xl py-3 pl-10 pr-4 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                placeholder="Enter your username"
+                style={inputStyle}
+                placeholder="Enter username"
+                onFocus={(e) => {
+                  (e.target as HTMLInputElement).style.borderColor = 'rgba(99, 102, 241, 0.35)';
+                  (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.08)';
+                }}
+                onBlur={(e) => {
+                  (e.target as HTMLInputElement).style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                  (e.target as HTMLInputElement).style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                <Lock className="h-5 w-5" />
+          {/* Password */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '10px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'rgba(148, 163, 184, 0.4)',
+                marginBottom: '7px',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              Password
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '13px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgba(148, 163, 184, 0.3)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <Lock className="h-4 w-4" />
               </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#090d16] border border-[#1e293b] focus:border-indigo-500/50 rounded-xl py-3 pl-10 pr-4 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                placeholder="Enter your password"
+                style={inputStyle}
+                placeholder="Enter password"
+                onFocus={(e) => {
+                  (e.target as HTMLInputElement).style.borderColor = 'rgba(99, 102, 241, 0.35)';
+                  (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.08)';
+                }}
+                onBlur={(e) => {
+                  (e.target as HTMLInputElement).style.borderColor = 'rgba(148, 163, 184, 0.1)';
+                  (e.target as HTMLInputElement).style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -94,11 +226,35 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-colors mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 cursor-pointer"
+            style={{
+              padding: '12px 20px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+              border: 'none',
+              color: '#fff',
+              fontSize: '14px',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
+              opacity: isLoading ? 0.7 : 1,
+              transition: 'all 0.15s ease',
+              marginTop: '8px',
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading) {
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(99, 102, 241, 0.4)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(99, 102, 241, 0.3)';
+              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+            }}
           >
             {isLoading ? (
-              <span className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+              <span className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 <span>Authenticating...</span>
               </span>
             ) : (
@@ -109,9 +265,22 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             )}
           </button>
         </form>
+
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <span
+            style={{
+              fontSize: '10px',
+              color: 'rgba(148, 163, 184, 0.2)',
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.04em',
+            }}
+          >
+            Sovereign AI · On-Premise · v1.0.0
+          </span>
+        </div>
       </div>
     </div>
   );
 };
-
 export default Login;

@@ -14,23 +14,17 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document, onRemove }
   const formatBytes = (bytes: number, decimals = 1) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
   };
 
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
       });
-    } catch {
-      return dateString;
-    }
+    } catch { return dateString; }
   };
 
   const handleCopyId = () => {
@@ -40,50 +34,128 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document, onRemove }
   };
 
   return (
-    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 hover:border-slate-700 transition-all duration-300 shadow-md flex flex-col justify-between h-[210px]">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center space-x-3 truncate">
-          <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-            <FileText className="h-5 w-5" />
+    <div
+      style={{
+        background: '#0f172a',
+        border: '1px solid rgba(148, 163, 184, 0.08)',
+        borderRadius: '12px',
+        padding: '18px',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        gap: '14px',
+        transition: 'all 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.border = '1px solid rgba(99, 102, 241, 0.12)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 24px rgba(0,0,0,0.2)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.border = '1px solid rgba(148, 163, 184, 0.08)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+      }}
+    >
+      {/* Top: icon + name + delete */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-3 truncate">
+          <div
+            className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{
+              background: 'rgba(99, 102, 241, 0.08)',
+              border: '1px solid rgba(99, 102, 241, 0.12)',
+            }}
+          >
+            <FileText className="h-4 w-4" style={{ color: '#818cf8' }} />
           </div>
-          <div className="truncate">
-            <h3 className="text-sm font-semibold text-slate-200 truncate" title={document.filename}>
+          <div className="truncate min-w-0">
+            <h3
+              className="text-sm font-semibold truncate"
+              style={{ color: '#e2e8f0', letterSpacing: '-0.01em' }}
+              title={document.filename}
+            >
               {document.filename}
             </h3>
-            <span className="text-xs text-slate-500 font-mono">
+            <span
+              className="text-xs"
+              style={{ color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}
+            >
               {formatBytes(document.size_bytes)}
             </span>
           </div>
         </div>
         <button
           onClick={() => onRemove(document.document_id)}
-          className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
-          title="Remove document from session"
+          className="cursor-pointer flex-shrink-0"
+          style={{
+            padding: '5px',
+            borderRadius: '6px',
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(148, 163, 184, 0.25)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = '#fb7185';
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(244, 63, 94, 0.06)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(148, 163, 184, 0.25)';
+            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          }}
+          title="Remove document"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-y-2 py-4 my-2 border-y border-[#1e293b] text-xs">
-        <span className="text-slate-500">Status</span>
+      {/* Meta row */}
+      <div
+        className="grid grid-cols-2 gap-y-2 text-xs"
+        style={{
+          paddingTop: '12px',
+          borderTop: '1px solid rgba(148, 163, 184, 0.05)',
+        }}
+      >
+        <span style={{ color: 'rgba(148, 163, 184, 0.35)' }}>Status</span>
         <div className="text-right">
           <DocumentStatus status={document.status} />
         </div>
-        
-        <span className="text-slate-500">Uploaded</span>
-        <span className="text-right text-slate-300 font-medium">{formatDate(document.created_at)}</span>
+        <span style={{ color: 'rgba(148, 163, 184, 0.35)' }}>Indexed</span>
+        <span className="text-right" style={{ color: 'rgba(148, 163, 184, 0.6)', fontFamily: "'JetBrains Mono', monospace" }}>
+          {formatDate(document.created_at)}
+        </span>
       </div>
 
-      <div className="flex items-center justify-between text-[11px] font-mono bg-[#090d16] px-3 py-1.5 rounded-lg border border-[#1e293b]/40">
-        <span className="text-slate-500 select-all truncate mr-2">
-          ID: {document.document_id}
+      {/* ID row */}
+      <div
+        className="flex items-center justify-between gap-2"
+        style={{
+          padding: '7px 10px',
+          borderRadius: '6px',
+          background: 'rgba(10, 15, 26, 0.6)',
+          border: '1px solid rgba(148, 163, 184, 0.05)',
+        }}
+      >
+        <span
+          className="text-[10px] truncate"
+          style={{ color: 'rgba(148, 163, 184, 0.3)', fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          {document.document_id}
         </span>
         <button
           onClick={handleCopyId}
-          className="text-slate-400 hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0 cursor-pointer"
-          title="Copy Document ID"
+          className="cursor-pointer flex-shrink-0"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(148, 163, 184, 0.3)',
+            transition: 'color 0.15s ease',
+            padding: '2px',
+          }}
+          title="Copy ID"
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#818cf8'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(148, 163, 184, 0.3)'; }}
         >
-          {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+          {copied ? <Check className="h-3 w-3" style={{ color: '#34d399' }} /> : <Copy className="h-3 w-3" />}
         </button>
       </div>
     </div>

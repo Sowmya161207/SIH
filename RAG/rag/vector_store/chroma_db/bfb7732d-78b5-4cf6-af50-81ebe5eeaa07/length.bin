@@ -1,0 +1,2 @@
+invalid type: string "stem within 24 hours of completion.\nRequired fields: Equipment tag, work order number, work performed (description), parts replaced (part\nnumbers and quantities), next planned maintenance date, engineer signature and employee ID.", expected f64ooleanntenance activities must be recorded in the SAP PM system within 24 hours of completion.
+Required fields: Equipment tag, work 

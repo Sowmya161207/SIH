@@ -24,8 +24,8 @@ EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 EMBEDDING_DIM        = 384        # Output dimension of all-MiniLM-L6-v2
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
-CHUNK_SIZE        = 400           # characters (not tokens) for simplicity
-CHUNK_OVERLAP     = 80            # overlap between consecutive chunks (chars)
+CHUNK_SIZE        = 1000          # characters (not tokens) for better context window
+CHUNK_OVERLAP     = 200           # overlap between consecutive chunks (chars)
 MIN_CHUNK_LENGTH  = 50            # discard chunks shorter than this
 
 # ─── Retrieval ────────────────────────────────────────────────────────────────

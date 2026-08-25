@@ -6,7 +6,7 @@ Vector store backend: ChromaDB (persistent, cosine similarity).
 
 Public API
 ----------
-    search_documents(query, user_role=None, top_k=5) -> dict
+    search_documents(query, workspace_id=None, user_role=None, top_k=5) -> dict
 
 Return schema
 -------------
@@ -24,6 +24,8 @@ Return schema
                 "equipment":     str,
                 "document_type": str,
                 "classification":str,
+                "has_images":    bool,
+                "image_count":   int,
             },
             ...
         ],
@@ -103,6 +105,7 @@ def _is_accessible(chunk: Dict[str, Any], user_role: Optional[str]) -> bool:
 
 def search_documents(
     query:     str,
+    workspace_id: Optional[str] = None,
     user_role: Optional[str] = None,
     top_k:     int = DEFAULT_TOP_K,
 ) -> Dict[str, Any]:
@@ -113,6 +116,8 @@ def search_documents(
     ----------
     query : str
         Natural-language question or keyword string.
+    workspace_id : str | None
+        Optional workspace ID for strict boundary filtering.
     user_role : str | None
         The role of the requesting user (e.g. ``"maintenance_engineer"``).
         Pass ``None`` to bypass access control (useful in trusted back-end calls).
@@ -143,7 +148,15 @@ def search_documents(
     except RuntimeError as exc:
         raise RuntimeError(str(exc)) from exc
 
-    raw_results: List[Dict[str, Any]] = store.search(query_vec, top_k=fetch_k)
+    where_filter = {}
+    if workspace_id:
+        where_filter["workspace_id"] = workspace_id
+
+    raw_results: List[Dict[str, Any]] = store.search(
+        query_vec, 
+        top_k=fetch_k, 
+        where_filter=where_filter if where_filter else None
+    )
     total_found = len(raw_results)
 
     # 3. Permission filter
@@ -164,10 +177,13 @@ def search_documents(
             "text":           chunk.get("text", ""),
             "score":          chunk.get("score", 0.0),
             "document_id":    chunk.get("document_id", ""),
+            "workspace_id":   chunk.get("workspace_id", ""),
             "title":          chunk.get("title", ""),
             "equipment":      chunk.get("equipment", ""),
             "document_type":  chunk.get("document_type", ""),
             "classification": chunk.get("classification", ""),
+            "has_images":     chunk.get("has_images", False),
+            "image_count":    chunk.get("image_count", 0),
         })
 
     logger.info(

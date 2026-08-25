@@ -1,5 +1,27 @@
-﻿__pycache__/
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
 .venv/
-.env
+env/
+venv/
+ENV/
+
+# Data & Database persistence
+rag/vector_store/chroma_db/
+RAG/rag/vector_store/chroma_db/
+backend/rag_vector_db/
+rag_vector_db/
+uploads/
+backend/uploads/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

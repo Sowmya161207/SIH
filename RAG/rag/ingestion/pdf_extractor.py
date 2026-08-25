@@ -16,6 +16,9 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 import fitz  # PyMuPDF
+import pytesseract
+from PIL import Image
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +63,18 @@ def extract_pdf(pdf_path: str | Path) -> List[Dict[str, Any]]:
 
     total_pages = len(doc)
     for page_num, page in enumerate(doc, start=1):
+        image_list = page.get_images(full=True)
+        has_images = len(image_list) > 0
         try:
-            raw_text = page.get_text("text")  # type: ignore[attr-defined]
+            raw_text = page.get_text("text").strip()  # type: ignore[attr-defined]
+            # Fallback to OCR if text is empty (scanned page)
+            if not raw_text:
+                logger.debug("Page %d has no extractable text, attempting OCR...", page_num)
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # 2x resolution for better OCR
+                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                raw_text = pytesseract.image_to_string(img).strip()
+                if raw_text:
+                    logger.debug("Successfully extracted text via OCR for page %d.", page_num)
         except Exception as exc:
             logger.warning("Failed to extract page %d: %s", page_num, exc)
             raw_text = ""
@@ -70,6 +83,8 @@ def extract_pdf(pdf_path: str | Path) -> List[Dict[str, Any]]:
             "page":        page_num,
             "text":        raw_text,
             "total_pages": total_pages,
+            "has_images":  has_images,
+            "image_count": len(image_list),
         })
 
     doc.close()

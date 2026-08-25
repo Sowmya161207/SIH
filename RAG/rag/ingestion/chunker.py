@@ -13,6 +13,7 @@ Chunk schema
 {
     "chunk_id":      str,   # "{document_id}_p{page}_c{chunk_index}"
     "document_id":   str,
+    "workspace_id":  str,
     "title":         str,
     "page":          int,
     "chunk_index":   int,   # 0-indexed within the page
@@ -23,6 +24,8 @@ Chunk schema
     "allowed_roles": list[str],
     "source_file":   str,
     "total_pages":   int,
+    "has_images":    bool,
+    "image_count":   int,
 }
 """
 
@@ -51,7 +54,7 @@ def chunk_text(
         Must contain at minimum:
           - ``document_id``, ``title``, ``page``, ``equipment``,
             ``document_type``, ``classification``, ``allowed_roles``,
-            ``source_file``, ``total_pages``
+            ``source_file``, ``total_pages``. ``workspace_id`` is optional.
     chunk_size : int
         Maximum character length of each chunk.
     chunk_overlap : int
@@ -68,10 +71,16 @@ def chunk_text(
     chunks: List[Dict[str, Any]] = []
     start  = 0
     idx    = 0
-    step   = max(1, chunk_size - chunk_overlap)  # guard against zero step
 
     while start < len(text):
-        end       = start + chunk_size
+        end = start + chunk_size
+        
+        # Try to snap to the nearest space/newline to avoid cutting words
+        if end < len(text):
+            last_space = max(text.rfind(' ', start, end), text.rfind('\n', start, end))
+            if last_space != -1 and last_space > start + (chunk_size // 2):
+                end = last_space
+                
         chunk_str = text[start:end].strip()
 
         if len(chunk_str) >= MIN_CHUNK_LENGTH:
@@ -84,6 +93,7 @@ def chunk_text(
                 "text":          chunk_str,
                 # ── carry all metadata fields forward ──
                 "document_id":   doc_id,
+                "workspace_id":  page_metadata.get("workspace_id", ""),
                 "title":         page_metadata.get("title", ""),
                 "page":          page_num,
                 "equipment":     page_metadata.get("equipment", ""),
@@ -92,11 +102,14 @@ def chunk_text(
                 "allowed_roles": page_metadata.get("allowed_roles", []),
                 "source_file":   page_metadata.get("source_file", ""),
                 "total_pages":   page_metadata.get("total_pages", 0),
+                "has_images":    page_metadata.get("has_images", False),
+                "image_count":   page_metadata.get("image_count", 0),
             }
             chunks.append(chunk)
             idx += 1
 
-        start += step
+        next_start = end - chunk_overlap
+        start = max(start + 1, next_start)
 
     logger.debug(
         "Page %d → %d chunks",

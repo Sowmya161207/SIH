@@ -42,6 +42,7 @@ logger = logging.getLogger("rag_services")
 
 def search_documents(
     query:     str,
+    workspace_id: Optional[str] = None,
     user_role: Optional[str] = None,
     top_k:     int = 5,
 ) -> Dict[str, Any]:
@@ -52,6 +53,8 @@ def search_documents(
     ----------
     query : str
         Natural-language question, e.g. "bearing temperature exceeded in P-101".
+    workspace_id : str | None
+        Optional workspace ID for strict boundary filtering.
     user_role : str | None
         Role of the requesting user:
           - ``"maintenance_engineer"``
@@ -96,7 +99,7 @@ def search_documents(
             python ingest_documents.py --pdf_dir data/demo/
     """
     from rag.retrieval.retriever import search_documents as _search
-    return _search(query=query, user_role=user_role, top_k=top_k)
+    return _search(query=query, workspace_id=workspace_id, user_role=user_role, top_k=top_k)
 
 
 def ingest_pdf(
@@ -114,6 +117,7 @@ def ingest_pdf(
     metadata : dict
         Document-level metadata. Must include:
           - ``document_id``   (str, unique)
+          - ``workspace_id``  (str, optional)
           - ``title``         (str)
           - ``equipment``     (str)
           - ``document_type`` (str)  e.g. "maintenance" | "sop" | "manual" | "incident"
@@ -183,6 +187,67 @@ def ingest_pdf(
         "status":       "ok",
         "chunks_added": len(chunks),
         "document_id":  metadata.get("document_id"),
+    }
+
+
+def batch_ingest_directory(
+    pdf_dir: str | Path,
+    workspace_id: Optional[str] = None,
+    reset_store: bool = False,
+) -> Dict[str, Any]:
+    """
+    Ingest all PDFs in a directory automatically. Useful for bulk uploads.
+
+    Parameters
+    ----------
+    pdf_dir : str | Path
+        Directory containing PDF files.
+    workspace_id : str | None
+        Optional workspace ID to assign to all documents in this batch.
+    reset_store : bool
+        If True, wipe the existing index before adding.
+
+    Returns
+    -------
+    dict
+        ``{"status": "ok", "files_processed": N, "total_chunks": M, "errors": E}``
+    """
+    pdf_dir = Path(pdf_dir)
+    if not pdf_dir.exists() or not pdf_dir.is_dir():
+        return {"status": "error", "message": "Directory not found"}
+
+    from rag.vector_store.chroma_store import ChromaVectorStore
+    if reset_store:
+        ChromaVectorStore().reset()
+
+    processed, chunks, errors = 0, 0, 0
+    for pdf_path in pdf_dir.glob("*.pdf"):
+        # Auto-generate metadata for batch processing
+        stem = pdf_path.stem.replace("-", "_").replace(" ", "_").lower()
+        meta = {
+            "document_id":   stem,
+            "title":         pdf_path.stem.replace("_", " ").title(),
+            "equipment":     "Unknown",
+            "document_type": "general",
+            "classification":"internal",
+            "allowed_roles": [],
+        }
+        if workspace_id:
+            meta["workspace_id"] = workspace_id
+
+        try:
+            res = ingest_pdf(pdf_path, meta, reset_store=False)
+            chunks += res.get("chunks_added", 0)
+            processed += 1
+        except Exception as e:
+            logger.error("Failed to ingest %s: %s", pdf_path.name, e)
+            errors += 1
+
+    return {
+        "status": "ok",
+        "files_processed": processed,
+        "total_chunks": chunks,
+        "errors": errors
     }
 
 

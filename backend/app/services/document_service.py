@@ -1,9 +1,6 @@
 import os
 import uuid
 import logging
-import asyncio
-import sys
-from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -23,35 +20,13 @@ from app.models.document import (
 logger = logging.getLogger(__name__)
 
 
-def _get_rag_services():
-    """
-    Import the RAG service from the project-level RAG directory.
-
-    Project structure:
-
-        SIH/
-        ├── backend/
-        ├── frontend/
-        └── RAG/
-            └── rag_services.py
-    """
-
-    project_root = Path(__file__).resolve().parents[3]
-    rag_dir = project_root / "RAG"
-
-    if str(rag_dir) not in sys.path:
-        sys.path.insert(0, str(rag_dir))
-
-    from rag_services import ingest_pdf
-
-    return ingest_pdf
-
-
 class DocumentService:
-    """Service for managing document uploads, validation, storage, and metadata."""
+    """Service for managing document uploads, validation, storage,
+    metadata, and RAG ingestion.
+    """
 
     def __init__(self):
-        # In-memory document metadata storage for hackathon phase
+        # In-memory document metadata storage for hackathon phase.
         self._documents: Dict[str, Dict[str, Any]] = {}
         self._ensure_upload_directory()
 
@@ -65,13 +40,13 @@ class DocumentService:
 
     async def upload_document(
         self,
-        file: UploadFile
+        file: UploadFile,
     ) -> DocumentUploadResponse:
-
-        """Validate, store, and track an uploaded PDF document."""
+        """Validate, store, track, and ingest an uploaded PDF document."""
 
         logger.info(
-            f"Receiving document upload request for file: {file.filename}"
+            "Receiving document upload request for file: %s",
+            file.filename if file else None,
         )
 
         # ---------------------------------------------------------
@@ -145,18 +120,15 @@ class DocumentService:
 
         file_path = os.path.join(
             upload_dir,
-            stored_filename
+            stored_filename,
         )
 
         if os.path.exists(file_path):
-
             document_id = uuid.uuid4().hex
-
             stored_filename = f"{document_id}.pdf"
-
             file_path = os.path.join(
                 upload_dir,
-                stored_filename
+                stored_filename,
             )
 
         # ---------------------------------------------------------
@@ -184,63 +156,45 @@ class DocumentService:
 
         self._documents[document_id] = metadata
 
-        logger.info(
-            f"Successfully uploaded and stored document "
-            f"ID: {document_id} ({filename})"
-        )
-
         # ---------------------------------------------------------
-        # 8. RAG ingestion
+        # 8. RAG ingestion using the improved RAG service
         # ---------------------------------------------------------
 
         try:
-
-            ingest_pdf = _get_rag_services()
-
-            rag_metadata = {
-                "document_id": document_id,
-                "title": filename,
-                "equipment": "Unknown",
-                "document_type": "general",
-                "classification": "internal",
-                "allowed_roles": [],
-            }
+            from app.services.rag_service import ingest_document
 
             logger.info(
-                f"Starting RAG ingestion for document "
-                f"{document_id}"
+                "Starting improved RAG ingestion for document %s",
+                document_id,
             )
 
-            rag_result = await asyncio.to_thread(
-                ingest_pdf,
-                pdf_path=file_path,
-                metadata=rag_metadata,
-                reset_store=False,
+            ingest_result = ingest_document(
+                document_id=document_id,
+                file_path=file_path,
+                metadata={
+                    "filename": filename,
+                    "title": filename,
+                },
             )
 
             logger.info(
-                f"RAG ingestion completed for document "
-                f"{document_id}: {rag_result}"
+                "RAG ingestion completed for document %s: %s",
+                document_id,
+                ingest_result,
             )
 
             self._documents[document_id]["rag_status"] = "indexed"
-
-            self._documents[document_id]["rag_result"] = rag_result
+            self._documents[document_id]["rag_result"] = ingest_result
 
         except Exception as exc:
-
-            # -----------------------------------------------------
-            # IMPORTANT:
-            # Upload should NOT fail just because RAG failed.
-            # -----------------------------------------------------
-
+            # Upload should not fail merely because RAG ingestion failed.
             logger.exception(
-                f"RAG ingestion failed for document "
-                f"{document_id}: {exc}"
+                "RAG ingestion failed for document %s: %s",
+                document_id,
+                exc,
             )
 
             self._documents[document_id]["rag_status"] = "failed"
-
             self._documents[document_id]["rag_error"] = str(exc)
 
         # ---------------------------------------------------------
@@ -257,17 +211,16 @@ class DocumentService:
 
     async def get_document_status(
         self,
-        document_id: str
+        document_id: str,
     ) -> DocumentStatusResponse:
-
-        """Retrieve status and metadata for a given document ID."""
+        """Retrieve metadata for a given document ID."""
 
         logger.info(
-            f"Document lookup requested for ID: {document_id}"
+            "Document lookup requested for ID: %s",
+            document_id,
         )
 
         if document_id not in self._documents:
-
             raise FileNotFoundException(
                 f"Document with ID '{document_id}' was not found."
             )

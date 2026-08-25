@@ -167,6 +167,7 @@ class ChromaVectorStore:
         self,
         query_vector: np.ndarray,
         top_k: int = DEFAULT_TOP_K,
+        where_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Find the *top_k* most similar chunks to *query_vector*.
@@ -177,6 +178,8 @@ class ChromaVectorStore:
             Shape ``(EMBEDDING_DIM,)`` or ``(1, EMBEDDING_DIM)``.
         top_k : int
             Number of results to return.
+        where_filter : dict, optional
+            ChromaDB filter dict, e.g., {"workspace_id": "ws_123"}.
 
         Returns
         -------
@@ -194,11 +197,15 @@ class ChromaVectorStore:
 
         k = min(top_k, self._collection.count())
 
-        raw = self._collection.query(
-            query_embeddings = [vec.tolist()],
-            n_results        = k,
-            include          = ["documents", "metadatas", "distances"],
-        )
+        query_args = {
+            "query_embeddings": [vec.tolist()],
+            "n_results": k,
+            "include": ["documents", "metadatas", "distances"],
+        }
+        if where_filter:
+            query_args["where"] = where_filter
+
+        raw = self._collection.query(**query_args)
 
         results: List[Dict[str, Any]] = []
         for doc, meta, dist in zip(

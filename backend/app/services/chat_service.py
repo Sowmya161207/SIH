@@ -1,35 +1,20 @@
 import logging
-import sys
-from pathlib import Path
 
 from app.models.chat import ChatRequest, ChatResponse, Source
 from app.services.llm_service import generate_answer
+from app.services.rag_service import retrieve
 
 logger = logging.getLogger(__name__)
 
 
-def _get_rag_search():
-    """Load the RAG search function from the project RAG directory."""
-
-    project_root = Path(__file__).resolve().parents[3]
-    rag_dir = project_root / "RAG"
-
-    if str(rag_dir) not in sys.path:
-        sys.path.insert(0, str(rag_dir))
-
-    from rag_services import search_documents
-
-    return search_documents
-
-
 class ChatService:
-    """Service handling chat interactions using RAG + local Ollama LLM."""
+    """Service handling chat using improved RAG and local Ollama LLM."""
 
     async def process_message(
         self,
-        request: ChatRequest
+        request: ChatRequest,
     ) -> ChatResponse:
-        """Retrieve relevant evidence and generate a grounded answer."""
+        """Retrieve grounded evidence and generate a local LLM answer."""
 
         logger.info(
             "Processing chat request. Conversation ID: %s",
@@ -38,24 +23,29 @@ class ChatService:
 
         try:
             # ---------------------------------------------------------
-            # STEP 1: Load RAG search service
+            # STEP 1: Retrieve evidence using the improved RAG pipeline
             # ---------------------------------------------------------
-            search_documents = _get_rag_search()
 
-            # ---------------------------------------------------------
-            # STEP 2: Retrieve relevant evidence from ChromaDB
-            # ---------------------------------------------------------
-            result = search_documents(
+            evidence_list = retrieve(
                 query=request.message,
-                top_k=3,
+                top_k=5,
             )
 
-            evidence = result.get("evidence", [])
+            # ---------------------------------------------------------
+            # STEP 2: Filter low-confidence evidence
+            # ---------------------------------------------------------
+
+            strong_evidence = [
+                evidence
+                for evidence in evidence_list
+                if evidence.get("score", 0.0) >= 0.40
+            ]
 
             # ---------------------------------------------------------
-            # STEP 3: Handle no relevant documents
+            # STEP 3: Handle insufficient evidence
             # ---------------------------------------------------------
-            if not evidence:
+
+            if not strong_evidence:
                 return ChatResponse(
                     answer=(
                         "I could not find sufficient evidence in the "
@@ -66,39 +56,41 @@ class ChatService:
                 )
 
             # ---------------------------------------------------------
-            # STEP 4: Generate answer using LOCAL Ollama LLM
+            # STEP 4: Generate grounded answer using local Ollama
             # ---------------------------------------------------------
+
             answer = await generate_answer(
                 question=request.message,
-                evidence=evidence,
+                evidence=strong_evidence,
             )
 
             # ---------------------------------------------------------
             # STEP 5: Build source/provenance information
             # ---------------------------------------------------------
+
             sources = []
+            seen_sources = set()
 
-            seen = set()
-
-            for item in evidence:
-
-                document = item.get(
+            for evidence in strong_evidence:
+                document = evidence.get(
                     "source",
-                    item.get(
+                    evidence.get(
                         "title",
-                        "Unknown document",
+                        evidence.get(
+                            "document_id",
+                            "Unknown document",
+                        ),
                     ),
                 )
 
-                page = item.get("page")
+                page = evidence.get("page")
 
                 key = (document, page)
 
-                # Avoid duplicate source entries
-                if key in seen:
+                if key in seen_sources:
                     continue
 
-                seen.add(key)
+                seen_sources.add(key)
 
                 sources.append(
                     Source(
@@ -108,8 +100,9 @@ class ChatService:
                 )
 
             # ---------------------------------------------------------
-            # STEP 6: Return answer + sources to frontend
+            # STEP 6: Return grounded answer + citations
             # ---------------------------------------------------------
+
             return ChatResponse(
                 answer=answer,
                 conversation_id=request.conversation_id,
@@ -117,7 +110,6 @@ class ChatService:
             )
 
         except Exception as exc:
-
             logger.exception(
                 "RAG + LLM chat processing failed: %s",
                 exc,

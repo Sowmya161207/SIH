@@ -55,10 +55,12 @@ class ChatService:
                 plan=plan,
                 original_query=request.message,
                 conversation_id=request.conversation_id,
-                document_ids=document_ids
+                document_ids=document_ids,
+                user_role=request.user_role
             )
 
             return response
+
 
         except PlannerServiceError as pse:
             logger.error(f"Planning error for query '{request.message}': {pse}")

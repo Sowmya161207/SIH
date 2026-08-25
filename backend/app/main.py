@@ -13,8 +13,7 @@ from app.core.exceptions import (
     generic_exception_handler,
 )
 from app.utils.logging import setup_logging
-from app.api import health, chat, documents
-
+from app.api import health, chat, documents, auth
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,6 +54,7 @@ api_router = FastAPI()
 app.include_router(health.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 
 
 if __name__ == "__main__":

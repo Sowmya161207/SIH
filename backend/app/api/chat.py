@@ -1,4 +1,6 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
+
+from app.core.security import require_role
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.chat_service import chat_service
 
@@ -12,6 +14,9 @@ router = APIRouter(tags=["Chat"])
     summary="Process chat message",
     description="Send a message to the assistant and receive a response with source citations."
 )
-async def chat(request: ChatRequest) -> ChatResponse:
+async def chat(
+    request: ChatRequest,
+    current_user: dict = Depends(require_role("operator")),
+) -> ChatResponse:
     """Process incoming chat message using ChatService."""
     return await chat_service.process_message(request)

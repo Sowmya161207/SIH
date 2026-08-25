@@ -4,42 +4,15 @@ from app.core.security import (
     create_access_token,
     verify_password,
 )
+from app.db.database import get_user_by_username
 
-
-# Temporary local users for the hackathon MVP.
-# Passwords are stored as Argon2 hashes, never plaintext.
-USERS = {
-    "operator": {
-        "username": "operator",
-        "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$67h7KnsZMLNmemPTrhIk7A$9wNJOXPwFC5Wi114MbN0SgJdLHDtAdKQakPrt45r3v4",
-        "role": "operator",
-    },
-
-    "maintenance": {
-        "username": "maintenance",
-        "password_hash": "YOUR_MAINTENANCE_HASH",
-        "role": "maintenance_engineer",
-    },
-
-    "safety": {
-        "username": "safety",
-        "password_hash": "YOUR_SAFETY_HASH",
-        "role": "safety_officer",
-    },
-
-    "manager": {
-        "username": "manager",
-        "password_hash": "YOUR_MANAGER_HASH",
-        "role": "manager",
-    },
-}
 
 def authenticate_user(
     username: str,
     password: str,
 ) -> Optional[dict]:
 
-    user = USERS.get(username)
+    user = get_user_by_username(username)
 
     if not user:
         return None

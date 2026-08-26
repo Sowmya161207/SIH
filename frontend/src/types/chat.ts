@@ -6,6 +6,8 @@ export interface Source {
 export interface ChatRequest {
   message: string;
   conversation_id?: string | null;
+  document_id?: string | null;
+  attached_filename?: string | null;
 }
 
 export interface ChatResponse {
@@ -20,4 +22,6 @@ export interface Message {
   content: string;
   timestamp: string;
   sources?: Source[];
+  attached_filename?: string;
+  document_id?: string;
 }

@@ -13,7 +13,7 @@ import fitz  # PyMuPDF
 logger = logging.getLogger(__name__)
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"}
-TEXT_EXTENSIONS = {".txt", ".log", ".md", ".csv", ".json"}
+TEXT_EXTENSIONS = {".txt", ".log", ".md", ".csv", ".json", ".docx", ".doc", ".pptx", ".ppt"}
 
 
 def detect_file_type(file_path: str | Path) -> str:

@@ -11,16 +11,34 @@ interface DocumentListProps {
 export const DocumentList: React.FC<DocumentListProps> = ({ documents, onRemove }) => {
   if (documents.length === 0) {
     return (
-      <div className="bg-[#0f172a]/45 border border-[#1e293b] border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center min-h-[200px]">
-        <Database className="h-8 w-8 text-slate-600 mb-3" />
-        <p className="text-slate-400 text-sm font-medium">No documents uploaded yet</p>
-        <p className="text-slate-500 text-xs mt-1">Upload PDF files to index them into the sovereign workspace.</p>
+      <div
+        className="flex flex-col items-center justify-center text-center"
+        style={{
+          minHeight: '200px',
+          borderRadius: '12px',
+          border: '1px dashed rgba(148, 163, 184, 0.08)',
+          background: 'rgba(10, 15, 26, 0.3)',
+          padding: '48px 24px',
+        }}
+      >
+        <div
+          className="h-12 w-12 rounded-xl flex items-center justify-center mb-4"
+          style={{ background: 'rgba(148, 163, 184, 0.04)', border: '1px solid rgba(148, 163, 184, 0.06)' }}
+        >
+          <Database className="h-5 w-5" style={{ color: 'rgba(148, 163, 184, 0.2)' }} />
+        </div>
+        <p className="font-semibold text-sm" style={{ color: 'rgba(148, 163, 184, 0.4)' }}>
+          No documents indexed
+        </p>
+        <p className="text-xs mt-1.5 max-w-xs" style={{ color: 'rgba(148, 163, 184, 0.25)' }}>
+          Upload files using the panel above to begin indexing your knowledge base.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {documents.map((doc) => (
         <DocumentCard key={doc.document_id} document={doc} onRemove={onRemove} />
       ))}

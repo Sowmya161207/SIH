@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
@@ -22,5 +23,7 @@ class DocumentStatusResponse(BaseModel):
     status: str
     size_bytes: int
     created_at: datetime
+    chunks_indexed: Optional[int] = None
+    rag_status: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

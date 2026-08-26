@@ -27,7 +27,7 @@ def _is_accessible(chunk: Dict[str, Any], user_role: Optional[str]) -> bool:
     if isinstance(allowed, str):
         allowed = [allowed]
 
-    return user_role in allowed or user_role == "manager"
+    return user_role in allowed or user_role in ("manager", "admin")
 
 
 class Retriever:
@@ -77,8 +77,10 @@ class Retriever:
         for c in evidence_list:
             results.append({
                 "content": c.get("text", ""),
+                "text": c.get("text", ""),       # alias so LLM service can read it
                 "document_id": c.get("document_id", ""),
                 "source": c.get("filename") or c.get("source_file", "unknown.pdf"),
+                "title": c.get("filename") or c.get("source_file", "unknown.pdf"),
                 "page": c.get("page", 1),
                 "score": float(round(c.get("score", 0.0), 4)),
             })

@@ -98,13 +98,21 @@ def ingest_document(
 
     # 4. Assemble document metadata
     doc_meta = {
-        **(metadata or {}),
-        "document_id": document_id,
-        "filename": metadata.get("filename") if metadata and metadata.get("filename") else path.name,
-        "source_file": path.name,
-        "file_type": ftype,
-    }
-
+    **(metadata or {}),
+    "document_id": document_id,
+    "filename": (
+        metadata.get("filename")
+        if metadata and metadata.get("filename")
+        else path.name
+    ),
+    "source_file": path.name,
+    "file_type": ftype,
+    "allowed_roles": (
+        metadata.get("allowed_roles", [])
+        if metadata
+        else []
+    ),
+}
     # 5. Chunk
     chunks = chunk_document(clean_pages, doc_meta)
 

@@ -1,4 +1,4 @@
-export type DocumentStatus = 'uploaded' | 'processing' | 'completed' | 'failed';
+export type DocumentStatus = 'uploaded' | 'processing' | 'completed' | 'ready' | 'failed';
 
 export interface DocumentResponse {
   document_id: string;
@@ -6,4 +6,6 @@ export interface DocumentResponse {
   status: DocumentStatus;
   size_bytes: number;
   created_at: string;
+  chunks_indexed?: number | null;
+  rag_status?: string | null;
 }

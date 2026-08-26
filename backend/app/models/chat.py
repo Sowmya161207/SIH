@@ -7,6 +7,8 @@ class ChatRequest(BaseModel):
 
     message: str
     conversation_id: Optional[str] = None
+    document_id: Optional[str] = None
+    attached_filename: Optional[str] = None
 
     @field_validator("message")
     @classmethod

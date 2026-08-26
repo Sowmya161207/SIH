@@ -28,7 +28,7 @@ export const useChat = () => {
     localStorage.setItem('sovereign_messages', JSON.stringify(messages));
   }, [messages]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, documentId?: string, attachedFilename?: string) => {
     if (!content.trim()) return;
 
     const userMessage: Message = {
@@ -36,6 +36,8 @@ export const useChat = () => {
       role: 'user',
       content: content.trim(),
       timestamp: new Date().toISOString(),
+      document_id: documentId,
+      attached_filename: attachedFilename,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -45,11 +47,13 @@ export const useChat = () => {
     const request: ChatRequest = {
       message: userMessage.content,
       conversation_id: conversationId || undefined,
+      document_id: documentId || undefined,
+      attached_filename: attachedFilename || undefined,
     };
 
     try {
       const response = await sendChatMessage(request);
-      
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',

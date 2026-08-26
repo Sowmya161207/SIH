@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, AlertTriangle, FileText, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, X, AlertTriangle, FileText, CheckCircle2, Loader2, CloudUpload } from 'lucide-react';
 
 interface UploadZoneProps {
   onUpload: (file: File) => Promise<any>;
@@ -21,191 +21,278 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const maxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
+  const maxFileSizeBytes = 200 * 1024 * 1024;
 
   const validateFile = (file: File): boolean => {
     setValidationError(null);
     clearUploadState();
-
-    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-      setValidationError('Only PDF documents are supported.');
+    const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.ppt', '.pptx', '.txt', '.doc', '.docx', '.csv', '.md'];
+    if (!allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) {
+      setValidationError('Unsupported format. Please upload PDF, Image, PPT, TXT, or Word.');
       return false;
     }
-
-    if (file.size === 0) {
-      setValidationError('The selected file is empty.');
-      return false;
-    }
-
-    if (file.size > maxFileSizeBytes) {
-      setValidationError('File size exceeds the 20 MB limit.');
-      return false;
-    }
-
+    if (file.size === 0) { setValidationError('The selected file is empty.'); return false; }
+    if (file.size > maxFileSizeBytes) { setValidationError('File exceeds 200 MB limit.'); return false; }
     return true;
   };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (validateFile(file)) {
-        setSelectedFile(file);
-      }
-    }
+    const file = e.dataTransfer.files?.[0];
+    if (file && validateFile(file)) setSelectedFile(file);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (validateFile(file)) {
-        setSelectedFile(file);
-      }
-    }
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+    const file = e.target.files?.[0];
+    if (file && validateFile(file)) setSelectedFile(file);
   };
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setValidationError(null);
     clearUploadState();
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleUploadSubmit = async () => {
     if (!selectedFile) return;
     try {
       await onUpload(selectedFile);
-      setSelectedFile(null); // Clear selected file upon successful upload initiating
-    } catch (e) {
-      // Error handled by hook state
-    }
+      setSelectedFile(null);
+      setTimeout(() => {
+        const queryPanel = document.getElementById('query-knowledge-base');
+        if (queryPanel) {
+          queryPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        const queryInput = document.getElementById('query-knowledge-base-input') as HTMLInputElement;
+        if (queryInput) {
+          queryInput.focus();
+        }
+      }, 100);
+    } catch (e) { /* handled by hook */ }
   };
 
   const formatBytes = (bytes: number, decimals = 1) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
   };
 
   return (
-    <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md max-w-2xl mx-auto">
-      <h2 className="text-base font-semibold text-slate-200 mb-4">Upload PDF Document</h2>
+    <div
+      style={{
+        background: '#0f172a',
+        border: '1px solid rgba(148, 163, 184, 0.08)',
+        borderRadius: '12px',
+        padding: '24px',
+      }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div
+          style={{
+            fontSize: '9px',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'rgba(148, 163, 184, 0.4)',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        >
+          Upload Document
+        </div>
+      </div>
 
-      {/* Drag & Drop Zone */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".pdf,image/png,image/jpeg,.ppt,.pptx,.txt,.doc,.docx"
+        className="hidden"
+      />
+
+      {/* Drop zone */}
       {!selectedFile && (
         <div
           onDragEnter={handleDrag}
           onDragOver={handleDrag}
           onDragLeave={handleDrag}
           onDrop={handleDrop}
-          onClick={triggerFileInput}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
-            dragActive
-              ? 'border-indigo-500 bg-indigo-500/5'
-              : 'border-[#1e293b] hover:border-slate-600 bg-[#090d16]/30'
-          }`}
+          onClick={() => fileInputRef.current?.click()}
+          className="cursor-pointer flex flex-col items-center justify-center text-center"
+          style={{
+            minHeight: '140px',
+            borderRadius: '10px',
+            border: `1px dashed ${dragActive ? 'rgba(99, 102, 241, 0.4)' : 'rgba(148, 163, 184, 0.12)'}`,
+            background: dragActive ? 'rgba(99, 102, 241, 0.04)' : 'rgba(10, 15, 26, 0.5)',
+            transition: 'all 0.2s ease',
+            padding: '28px 20px',
+          }}
         >
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".pdf,application/pdf"
-            className="hidden"
-          />
-          <div className="flex flex-col items-center justify-center space-y-3">
-            <div className="p-3 rounded-full bg-slate-800/40 text-slate-400">
-              <Upload className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-300">
-                Drag and drop your PDF here, or <span className="text-indigo-400 font-semibold hover:text-indigo-300">browse</span>
-              </p>
-              <p className="text-xs text-slate-500 mt-1.5">PDF documents up to 20 MB</p>
-            </div>
+          <div
+            className="h-10 w-10 rounded-xl flex items-center justify-center mb-3"
+            style={{
+              background: dragActive ? 'rgba(99, 102, 241, 0.12)' : 'rgba(148, 163, 184, 0.05)',
+              border: `1px solid ${dragActive ? 'rgba(99, 102, 241, 0.2)' : 'rgba(148, 163, 184, 0.08)'}`,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <CloudUpload
+              className="h-5 w-5"
+              style={{ color: dragActive ? '#818cf8' : 'rgba(148, 163, 184, 0.35)' }}
+            />
           </div>
+          <p style={{ fontSize: '13px', color: 'rgba(226, 232, 240, 0.7)', fontWeight: 500 }}>
+            Drop file or{' '}
+            <span style={{ color: '#818cf8', fontWeight: 600 }}>browse</span>
+          </p>
+          <p
+            className="mt-1"
+            style={{ fontSize: '11px', color: 'rgba(148, 163, 184, 0.35)' }}
+          >
+            PDF · Image · PPT · TXT · Word — up to 20 MB
+          </p>
         </div>
       )}
 
-      {/* Selected File Details */}
+      {/* Selected file */}
       {selectedFile && (
-        <div className="bg-[#090d16] border border-[#1e293b] rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3 truncate">
-            <div className="p-2 rounded bg-indigo-500/10 text-indigo-400">
-              <FileText className="h-5 w-5" />
+        <div
+          className="flex items-center justify-between gap-3"
+          style={{
+            padding: '12px 14px',
+            borderRadius: '8px',
+            background: 'rgba(10, 15, 26, 0.6)',
+            border: '1px solid rgba(148, 163, 184, 0.08)',
+          }}
+        >
+          <div className="flex items-center gap-3 truncate">
+            <div
+              className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.15)' }}
+            >
+              <FileText className="h-4 w-4" style={{ color: '#818cf8' }} />
             </div>
-            <div className="truncate">
-              <p className="text-sm font-medium text-slate-300 truncate">{selectedFile.name}</p>
-              <p className="text-xs text-slate-500">{formatBytes(selectedFile.size)}</p>
+            <div className="truncate min-w-0">
+              <p
+                className="truncate text-sm font-medium"
+                style={{ color: '#e2e8f0' }}
+                title={selectedFile.name}
+              >
+                {selectedFile.name}
+              </p>
+              <p
+                className="text-xs"
+                style={{ color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                {formatBytes(selectedFile.size)}
+              </p>
             </div>
           </div>
           <button
             onClick={handleRemoveFile}
-            className="text-slate-500 hover:text-slate-300 p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             disabled={isUploading}
+            className="cursor-pointer flex-shrink-0"
+            style={{
+              padding: '5px',
+              borderRadius: '6px',
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(148, 163, 184, 0.3)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#fb7185'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(148, 163, 184, 0.3)'; }}
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      {/* Validation or API Errors */}
+      {/* Errors */}
       {(validationError || uploadError) && (
-        <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-start space-x-2 text-rose-400 text-xs animate-fadeIn">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-semibold">Error processing file</p>
-            <p className="mt-0.5">{validationError || uploadError}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Success Alert */}
-      {uploadSuccess && (
-        <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start space-x-2 text-emerald-400 text-xs animate-fadeIn">
-          <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
+        <div
+          className="mt-3 flex items-start gap-2 animate-fadeIn"
+          style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            background: 'rgba(244, 63, 94, 0.06)',
+            border: '1px solid rgba(244, 63, 94, 0.12)',
+          }}
+        >
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style={{ color: '#fb7185' }} />
           <div>
-            <p className="font-semibold">Upload Complete</p>
-            <p className="mt-0.5">The document has been securely uploaded and is being analyzed.</p>
+            <p className="text-xs font-semibold" style={{ color: '#fb7185' }}>Error</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(251, 113, 133, 0.7)' }}>{validationError || uploadError}</p>
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Success */}
+      {uploadSuccess && (
+        <div
+          className="mt-3 flex items-start gap-2 animate-fadeIn"
+          style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            background: 'rgba(16, 185, 129, 0.06)',
+            border: '1px solid rgba(16, 185, 129, 0.12)',
+          }}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style={{ color: '#34d399' }} />
+          <div>
+            <p className="text-xs font-semibold" style={{ color: '#34d399' }}>Document uploaded and indexed successfully.</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(52, 211, 153, 0.6)' }}>You can now ask a question.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
       {selectedFile && (
-        <div className="mt-5 flex justify-end space-x-3">
+        <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={handleRemoveFile}
-            className="px-4 py-2 border border-[#1e293b] rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
             disabled={isUploading}
+            className="cursor-pointer"
+            style={{
+              padding: '7px 14px',
+              borderRadius: '7px',
+              background: 'transparent',
+              border: '1px solid rgba(148, 163, 184, 0.08)',
+              color: 'rgba(148, 163, 184, 0.5)',
+              fontSize: '12px',
+              fontWeight: 500,
+              transition: 'all 0.15s ease',
+            }}
           >
             Cancel
           </button>
           <button
             onClick={handleUploadSubmit}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800/50 disabled:text-slate-500 rounded-lg text-xs font-semibold text-white transition-all flex items-center space-x-1.5 shadow-md shadow-indigo-600/15 cursor-pointer"
             disabled={isUploading}
+            className="cursor-pointer flex items-center gap-1.5"
+            style={{
+              padding: '7px 16px',
+              borderRadius: '7px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+              border: 'none',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 600,
+              boxShadow: '0 2px 12px rgba(99, 102, 241, 0.25)',
+              transition: 'all 0.15s ease',
+              opacity: isUploading ? 0.7 : 1,
+            }}
           >
             {isUploading ? (
               <>
@@ -213,7 +300,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
                 <span>Uploading...</span>
               </>
             ) : (
-              <span>Confirm & Upload</span>
+              <>
+                <Upload className="h-3.5 w-3.5" />
+                <span>Confirm & Upload</span>
+              </>
             )}
           </button>
         </div>

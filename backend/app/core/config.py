@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     UPLOAD_DIR: str = "uploads"
-    MAX_FILE_SIZE_MB: int = 20
+    MAX_FILE_SIZE_MB: int = 200
 
     # Frontend CORS
     ALLOWED_ORIGINS: str = (
@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 400
     CHUNK_OVERLAP: int = 80
     DEFAULT_TOP_K: int = 5
+
+    # On-Premise LLM / Ollama settings (100% Local - No Data Leakage)
+    LLM_PROVIDER: str = "ollama"
+    OLLAMA_URL: str = "http://127.0.0.1:11434/api/generate"
+    OLLAMA_MODEL: str = "llama3.1:8b"
+    LLM_TEMPERATURE: float = 0.1
+    LLM_TIMEOUT_SECONDS: float = 120.0
 
     model_config = SettingsConfigDict(
         env_file=".env",

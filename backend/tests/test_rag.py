@@ -61,7 +61,8 @@ def test_ingest_and_retrieve_pump_failure():
             "equipment": "Pump P-101",
             "document_type": "incident",
             "allowed_roles": ["safety_officer", "manager"]
-        }
+        },
+        reset_store=True
     )
     assert res["status"] == "ok"
     assert res["chunks_added"] > 0
@@ -88,6 +89,14 @@ def test_ingest_and_retrieve_pump_failure():
     assert found_relevant, f"Retrieval failed to return relevant failure chunks for query '{query}'"
 
 
+from app.core.security import create_access_token
+
+
+def auth_headers(role: str = "admin") -> dict:
+    token = create_access_token({"sub": "testadmin", "role": role})
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.mark.asyncio
 async def test_upload_api_triggers_rag_ingestion():
     """Test uploading PDF via /api/documents endpoint and verifying RAG indexing."""
@@ -99,11 +108,11 @@ async def test_upload_api_triggers_rag_ingestion():
     files = {"file": ("upload_manual_p101.pdf", pdf_bytes, "application/pdf")}
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post("/api/documents", files=files)
+        response = await client.post("/api/documents", files=files, headers=auth_headers())
         assert response.status_code == 200
         data = response.json()
 
-        assert data["status"] == "uploaded"
+        assert data["status"] in ["uploaded", "ready", "processing"]
         doc_id = data["document_id"]
 
         # Retrieve document via RAG

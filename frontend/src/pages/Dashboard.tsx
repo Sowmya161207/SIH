@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, MessageSquare, ArrowRight, Upload, Play, Eye, Cpu } from 'lucide-react';
+import { Database, ArrowRight, Upload, Play, Eye, Cpu, Zap, Lock } from 'lucide-react';
 import { DocumentResponse } from '../types/documents';
 import BackendStatus from '../components/layout/BackendStatus';
 
@@ -8,120 +8,346 @@ interface DashboardProps {
   setCurrentTab: (tab: string) => void;
 }
 
+const surface2 = '#0f172a';
+const borderDefault = 'rgba(148, 163, 184, 0.08)';
+const borderHover = 'rgba(99, 102, 241, 0.18)';
+
+interface MetricCardProps {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  onClick?: () => void;
+  accent?: boolean;
+}
+
+const MetricCard: React.FC<MetricCardProps> = ({ label, icon, children, onClick, accent }) => (
+  <div
+    onClick={onClick}
+    className={onClick ? 'cursor-pointer' : ''}
+    style={{
+      background: accent
+        ? 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(124,58,237,0.06) 100%)'
+        : surface2,
+      border: `1px solid ${accent ? 'rgba(99, 102, 241, 0.2)' : borderDefault}`,
+      borderRadius: '12px',
+      padding: '24px',
+      transition: 'all 0.2s ease',
+      position: 'relative',
+      overflow: 'hidden',
+    }}
+    onMouseEnter={(e) => {
+      if (onClick) {
+        (e.currentTarget as HTMLDivElement).style.border = `1px solid ${borderHover}`;
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(99, 102, 241, 0.08)';
+        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)';
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (onClick) {
+        (e.currentTarget as HTMLDivElement).style.border = `1px solid ${accent ? 'rgba(99, 102, 241, 0.2)' : borderDefault}`;
+        (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+      }
+    }}
+  >
+    <div className="flex items-center justify-between mb-4">
+      <span
+        style={{
+          fontSize: '9px',
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'rgba(148, 163, 184, 0.5)',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
+        {label}
+      </span>
+      <div
+        style={{
+          color: accent ? '#818cf8' : 'rgba(148, 163, 184, 0.4)',
+        }}
+      >
+        {icon}
+      </div>
+    </div>
+    {children}
+  </div>
+);
+
+interface ActionCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
+
+const ActionCard: React.FC<ActionCardProps> = ({ title, description, icon, onClick }) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left group cursor-pointer"
+    style={{
+      background: '#0a0f1a',
+      border: `1px solid ${borderDefault}`,
+      borderRadius: '10px',
+      padding: '18px 20px',
+      transition: 'all 0.18s ease',
+    }}
+    onMouseEnter={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.background = '#0f172a';
+      (e.currentTarget as HTMLButtonElement).style.border = `1px solid rgba(99, 102, 241, 0.15)`;
+      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+    }}
+    onMouseLeave={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.background = '#0a0f1a';
+      (e.currentTarget as HTMLButtonElement).style.border = `1px solid ${borderDefault}`;
+      (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+    }}
+  >
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div
+          className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+          style={{
+            background: 'rgba(99, 102, 241, 0.1)',
+            border: '1px solid rgba(99, 102, 241, 0.15)',
+          }}
+        >
+          <div style={{ color: '#818cf8' }}>{icon}</div>
+        </div>
+        <div className="min-w-0">
+          <div
+            className="text-sm font-semibold leading-none"
+            style={{ color: '#e2e8f0', letterSpacing: '-0.01em' }}
+          >
+            {title}
+          </div>
+          <div
+            className="text-xs mt-1.5 leading-relaxed"
+            style={{ color: 'rgba(148, 163, 184, 0.5)' }}
+          >
+            {description}
+          </div>
+        </div>
+      </div>
+      <ArrowRight
+        className="h-4 w-4 flex-shrink-0 mt-0.5 transition-transform duration-200 group-hover:translate-x-0.5"
+        style={{ color: 'rgba(148, 163, 184, 0.25)' }}
+      />
+    </div>
+  </button>
+);
+
 export const Dashboard: React.FC<DashboardProps> = ({ documents, setCurrentTab }) => {
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-[#0f172a] to-slate-900 border border-[#1e293b] rounded-2xl p-8 relative overflow-hidden shadow-lg">
-        <div className="absolute right-0 top-0 h-full w-1/3 bg-radial-gradient from-indigo-500/10 to-transparent pointer-events-none"></div>
-        <div className="max-w-2xl relative z-10">
-          <span className="px-3 py-1 text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full font-mono uppercase tracking-wider">
-            Sovereign Engine Active
-          </span>
-          <h1 className="text-3xl font-bold text-slate-100 tracking-tight mt-4">
-            Welcome to Sovereign AI Workbench
+    <div className="min-h-full animate-fadeIn">
+      {/* Hero Banner */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(180deg, #0a0f1a 0%, #080c15 100%)',
+          borderBottom: '1px solid rgba(148, 163, 184, 0.06)',
+          padding: '40px 48px 36px',
+        }}
+      >
+        {/* Grid background */}
+        <div
+          className="absolute inset-0 bg-grid opacity-60"
+          style={{ pointerEvents: 'none' }}
+        />
+        {/* Glow accent top-right */}
+        <div
+          className="absolute -top-20 -right-20 h-64 w-64 rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div className="relative max-w-3xl">
+          {/* Badge */}
+          <div className="flex items-center gap-2 mb-5">
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md"
+              style={{
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+              }}
+            >
+              <Lock className="h-2.5 w-2.5" style={{ color: '#818cf8' }} />
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: '#818cf8',
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}
+              >
+                Sovereign Engine Active
+              </span>
+            </div>
+          </div>
+
+          <h1
+            style={{
+              fontSize: '28px',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              color: '#f1f5f9',
+              lineHeight: 1.15,
+            }}
+          >
+            Enterprise Intelligence
+            <br />
+            <span style={{ color: 'rgba(148, 163, 184, 0.6)', fontWeight: 600 }}>
+              Command Center
+            </span>
           </h1>
-          <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-            A secure, on-premise AI platform designed for enterprise operations. Upload critical documents, run analytics, and chat with your files without exposing sensitive data to public cloud models.
+
+          <p
+            className="mt-4 max-w-xl"
+            style={{
+              fontSize: '13px',
+              lineHeight: 1.7,
+              color: 'rgba(148, 163, 184, 0.55)',
+            }}
+          >
+            A secure, on-premise AI platform for enterprise operations. Index critical
+            documents, run analytics, and query your intelligence layer without exposing
+            sensitive data to external systems.
           </p>
         </div>
       </div>
 
-      {/* Analytics Overview Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Connection Stat */}
-        <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md flex flex-col justify-between h-[150px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase font-mono">System Engine</span>
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <Cpu className="h-5 w-5" />
-            </div>
-          </div>
-          <div>
-            <BackendStatus showLabel={false} />
-            <div className="mt-2 text-xl font-bold text-slate-200">
-              <BackendStatus showLabel={true} />
-            </div>
-          </div>
-        </div>
+      {/* Content Area */}
+      <div style={{ padding: '32px 48px', maxWidth: '1280px' }}>
 
-        {/* Documents Stat */}
-        <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md flex flex-col justify-between h-[150px] hover:border-slate-800 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase font-mono">Knowledge Base</span>
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <Database className="h-5 w-5" />
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl font-extrabold text-slate-100">{documents.length}</div>
-            <div className="text-xs text-slate-400 font-medium mt-1">Documents in active workspace</div>
-          </div>
-        </div>
-
-        {/* AI Readiness */}
-        <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md flex flex-col justify-between h-[150px] hover:border-indigo-500/30 transition-all cursor-pointer group" onClick={() => setCurrentTab('chat')}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase font-mono">AI Capability</span>
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-              <MessageSquare className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">Ask Sovereign AI</div>
-              <div className="text-xs text-slate-400 font-medium mt-0.5">Start a secure session</div>
-            </div>
-            <ArrowRight className="h-5 w-5 text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions Panel */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-slate-400 tracking-wider uppercase font-mono">Quick Actions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <button
-            onClick={() => setCurrentTab('documents')}
-            className="flex items-center justify-between p-4 bg-[#090d16] hover:bg-[#0e1422] border border-[#1e293b] rounded-xl text-left transition-colors cursor-pointer group"
+        {/* Metrics Row */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {/* System Engine */}
+          <MetricCard
+            label="System Engine"
+            icon={<Cpu className="h-4 w-4" />}
           >
-            <div className="flex items-center space-x-3 truncate">
-              <div className="p-2 rounded bg-indigo-500/10 text-indigo-400">
-                <Upload className="h-4.5 w-4.5" />
-              </div>
-              <span className="text-sm font-semibold text-slate-300">Upload Document</span>
+            <div style={{ marginTop: '4px' }}>
+              <BackendStatus />
             </div>
-            <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-indigo-400 transition-colors" />
-          </button>
+            <div
+              className="mt-3 text-xs"
+              style={{ color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              FastAPI · On-Premise
+            </div>
+          </MetricCard>
 
-          <button
+          {/* Knowledge Base */}
+          <MetricCard
+            label="Knowledge Base"
+            icon={<Database className="h-4 w-4" />}
+          >
+            <div className="flex items-end gap-2 mt-1">
+              <span
+                style={{
+                  fontSize: '36px',
+                  fontWeight: 800,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1,
+                }}
+              >
+                {documents.length}
+              </span>
+              <span
+                className="mb-1"
+                style={{ fontSize: '12px', color: 'rgba(148, 163, 184, 0.45)' }}
+              >
+                documents
+              </span>
+            </div>
+            <div
+              className="mt-3 text-xs"
+              style={{ color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              indexed · secure enclave
+            </div>
+          </MetricCard>
+
+          {/* AI Capability */}
+          <MetricCard
+            label="AI Capability"
+            icon={<Zap className="h-4 w-4" style={{ color: '#818cf8' }} />}
             onClick={() => setCurrentTab('chat')}
-            className="flex items-center justify-between p-4 bg-[#090d16] hover:bg-[#0e1422] border border-[#1e293b] rounded-xl text-left transition-colors cursor-pointer group"
+            accent
           >
-            <div className="flex items-center space-x-3 truncate">
-              <div className="p-2 rounded bg-indigo-500/10 text-indigo-400">
-                <Play className="h-4.5 w-4.5" />
-              </div>
-              <span className="text-sm font-semibold text-slate-300">Ask AI Assistant</span>
+            <div
+              style={{
+                fontSize: '16px',
+                fontWeight: 700,
+                color: '#f1f5f9',
+                letterSpacing: '-0.02em',
+                marginTop: '4px',
+              }}
+            >
+              Ask Sovereign AI
             </div>
-            <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-indigo-400 transition-colors" />
-          </button>
+            <div className="flex items-center gap-1.5 mt-3">
+              <span
+                style={{ fontSize: '11px', color: 'rgba(148, 163, 184, 0.45)' }}
+              >
+                Start secure session
+              </span>
+              <ArrowRight className="h-3 w-3" style={{ color: 'rgba(99, 102, 241, 0.5)' }} />
+            </div>
+          </MetricCard>
+        </div>
 
-          <button
-            onClick={() => setCurrentTab('documents')}
-            className="flex items-center justify-between p-4 bg-[#090d16] hover:bg-[#0e1422] border border-[#1e293b] rounded-xl text-left transition-colors cursor-pointer group"
-          >
-            <div className="flex items-center space-x-3 truncate">
-              <div className="p-2 rounded bg-indigo-500/10 text-indigo-400">
-                <Eye className="h-4.5 w-4.5" />
-              </div>
-              <span className="text-sm font-semibold text-slate-300">View Documents</span>
-            </div>
-            <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-indigo-400 transition-colors" />
-          </button>
+        {/* Quick Actions */}
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <span
+              style={{
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(148, 163, 184, 0.35)',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              Quick Actions
+            </span>
+            <div
+              className="flex-1"
+              style={{ height: '1px', background: 'rgba(148, 163, 184, 0.06)' }}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <ActionCard
+              title="Upload Documents"
+              description="Index files into the secure knowledge base for AI querying"
+              icon={<Upload className="h-4 w-4" />}
+              onClick={() => setCurrentTab('documents')}
+            />
+            <ActionCard
+              title="Ask AI Assistant"
+              description="Query your organization's documents with natural language"
+              icon={<Play className="h-4 w-4" />}
+              onClick={() => setCurrentTab('chat')}
+            />
+            <ActionCard
+              title="Browse Knowledge"
+              description="Review, manage, and inspect indexed workspace documents"
+              icon={<Eye className="h-4 w-4" />}
+              onClick={() => setCurrentTab('documents')}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
 export default Dashboard;

@@ -7,28 +7,44 @@ interface DocumentStatusProps {
 }
 
 export const DocumentStatus: React.FC<DocumentStatusProps> = ({ status }) => {
-  const config = {
+  const config: Record<string, { label: string; color: string; bg: string; border: string; icon: any; spin: boolean }> = {
     uploaded: {
       label: 'Uploaded',
-      className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+      color: '#60a5fa',
+      bg: 'rgba(96, 165, 250, 0.08)',
+      border: 'rgba(96, 165, 250, 0.15)',
       icon: FileUp,
       spin: false,
     },
     processing: {
       label: 'Processing',
-      className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+      color: '#fbbf24',
+      bg: 'rgba(251, 191, 36, 0.08)',
+      border: 'rgba(251, 191, 36, 0.15)',
       icon: Loader2,
       spin: true,
     },
     completed: {
       label: 'Ready',
-      className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+      color: '#34d399',
+      bg: 'rgba(52, 211, 153, 0.08)',
+      border: 'rgba(52, 211, 153, 0.15)',
+      icon: CheckCircle2,
+      spin: false,
+    },
+    ready: {
+      label: 'Ready',
+      color: '#34d399',
+      bg: 'rgba(52, 211, 153, 0.08)',
+      border: 'rgba(52, 211, 153, 0.15)',
       icon: CheckCircle2,
       spin: false,
     },
     failed: {
       label: 'Failed',
-      className: 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
+      color: '#fb7185',
+      bg: 'rgba(251, 113, 133, 0.08)',
+      border: 'rgba(251, 113, 133, 0.15)',
       icon: AlertCircle,
       spin: false,
     },
@@ -38,9 +54,23 @@ export const DocumentStatus: React.FC<DocumentStatusProps> = ({ status }) => {
   const Icon = current.icon;
 
   return (
-    <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-xs font-medium tracking-wide ${current.className}`}>
-      <Icon className={`h-3 w-3 ${current.spin ? 'animate-spin' : ''}`} />
-      <span>{current.label}</span>
+    <span
+      className="inline-flex items-center gap-1"
+      style={{
+        padding: '2px 8px',
+        borderRadius: '4px',
+        background: current.bg,
+        border: `1px solid ${current.border}`,
+        fontSize: '9px',
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: current.color,
+        fontFamily: "'JetBrains Mono', monospace",
+      }}
+    >
+      <Icon className={`h-2.5 w-2.5 ${current.spin ? 'animate-spin' : ''}`} />
+      {current.label}
     </span>
   );
 };

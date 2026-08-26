@@ -10,17 +10,34 @@ export const SourceList: React.FC<SourceListProps> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
 
   return (
-    <div className="mt-4 pt-3 border-t border-[#1e293b] text-xs">
-      <div className="font-semibold text-slate-400 tracking-wider uppercase text-[10px] mb-2 font-mono">
-        Sources
+    <div
+      className="mt-4 pt-3"
+      style={{ borderTop: '1px solid rgba(148, 163, 184, 0.07)' }}
+    >
+      <div
+        className="text-[9px] font-semibold uppercase tracking-[0.12em] mb-2"
+        style={{ color: 'rgba(148, 163, 184, 0.35)', fontFamily: "'JetBrains Mono', monospace" }}
+      >
+        Referenced Sources
       </div>
-      <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-2">
         {sources.map((source, index) => (
-          <div key={index} className="flex items-center space-x-2 text-slate-300 font-mono">
-            <FileText className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
-            <span className="truncate max-w-[200px] sm:max-w-md md:max-w-lg">{source.document}</span>
-            <span className="text-slate-500">—</span>
-            <span className="text-slate-400">Page {source.page}</span>
+          <div
+            key={index}
+            className="flex items-center gap-1.5"
+            style={{
+              padding: '4px 10px',
+              borderRadius: '4px',
+              background: 'rgba(99, 102, 241, 0.06)',
+              border: '1px solid rgba(99, 102, 241, 0.12)',
+              fontSize: '10px',
+              color: 'rgba(148, 163, 184, 0.6)',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <FileText className="h-3 w-3 flex-shrink-0" style={{ color: '#818cf8' }} />
+            <span className="truncate max-w-[200px]">{source.document}</span>
+            <span style={{ color: 'rgba(148, 163, 184, 0.3)' }}>p.{source.page}</span>
           </div>
         ))}
       </div>

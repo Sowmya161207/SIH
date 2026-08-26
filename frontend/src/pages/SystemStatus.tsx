@@ -2,113 +2,167 @@ import React from 'react';
 import BackendStatus from '../components/layout/BackendStatus';
 import { ShieldCheck, Cpu, Terminal } from 'lucide-react';
 
+const cardStyle = {
+  background: '#0f172a',
+  border: '1px solid rgba(148, 163, 184, 0.08)',
+  borderRadius: '12px',
+  padding: '24px',
+};
+
+const rowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingBottom: '12px',
+  borderBottom: '1px solid rgba(148, 163, 184, 0.05)',
+  marginBottom: '12px',
+};
+
+const labelStyle = { fontSize: '12px', color: 'rgba(148, 163, 184, 0.4)' };
+const valueStyle = { fontSize: '12px', color: 'rgba(226, 232, 240, 0.7)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.02em' };
+
 export const SystemStatus: React.FC = () => {
   const routes = [
     { method: 'GET', path: '/api/health', desc: 'Checks live connection state' },
-    { method: 'POST', path: '/api/chat', desc: 'Queries models with local context history' },
-    { method: 'POST', path: '/api/documents', desc: 'Uploads and indexes PDF documents' },
-    { method: 'GET', path: '/api/documents/{document_id}', desc: 'Polls document analyzer states' },
+    { method: 'POST', path: '/api/chat', desc: 'Queries model with local context' },
+    { method: 'POST', path: '/api/documents', desc: 'Uploads and indexes documents' },
+    { method: 'GET', path: '/api/documents/{id}', desc: 'Polls document analyzer state' },
   ];
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">System Status</h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Diagnostics and configuration for the Sovereign AI instance.
-        </p>
-      </div>
-
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md space-y-4">
-          <div className="flex items-center space-x-3 text-slate-300">
-            <Cpu className="h-5 w-5 text-indigo-400" />
-            <h3 className="text-sm font-semibold">Instance Diagnostics</h3>
-          </div>
-
-          <div className="space-y-3 pt-2 text-xs">
-            <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-2">
-              <span className="text-slate-500">Backend Status</span>
-              <BackendStatus />
-            </div>
-            <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-2">
-              <span className="text-slate-500">API Runtime</span>
-              <span className="text-slate-300 font-medium">FastAPI (Python)</span>
-            </div>
-            <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-2">
-              <span className="text-slate-500">Deployment Environment</span>
-              <span className="text-indigo-400 font-semibold font-mono">On-Premise (Private Enclave)</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500">AI Services Orchestration</span>
-              <span className="text-slate-300 font-medium">Managed by Backend</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md space-y-4">
-          <div className="flex items-center space-x-3 text-slate-300">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
-            <h3 className="text-sm font-semibold">Security Profile</h3>
-          </div>
-
-          <div className="space-y-3 pt-2 text-xs">
-            <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-2">
-              <span className="text-slate-500">Data Isolation</span>
-              <span className="text-emerald-400 font-semibold">Strict / 100% Local</span>
-            </div>
-            <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-2">
-              <span className="text-slate-500">Network Bound</span>
-              <span className="text-slate-300">No external telemetry allowed</span>
-            </div>
-            <div className="flex items-center justify-between border-b border-[#1e293b]/40 pb-2">
-              <span className="text-slate-500">Vector Storage</span>
-              <span className="text-slate-300 font-mono">Chroma / SQLite local</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500">LLM Provider</span>
-              <span className="text-slate-300">Self-Hosted / Local GGUF</span>
-            </div>
-          </div>
+    <div className="min-h-full animate-fadeIn">
+      {/* Page header */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(180deg, #0a0f1a 0%, #080c15 100%)',
+          borderBottom: '1px solid rgba(148, 163, 184, 0.06)',
+          padding: '32px 48px 28px',
+        }}
+      >
+        <div className="absolute inset-0 bg-grid opacity-40" style={{ pointerEvents: 'none' }} />
+        <div className="relative">
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.025em' }}>
+            System Status
+          </h1>
+          <p className="mt-1.5" style={{ fontSize: '13px', color: 'rgba(148, 163, 184, 0.5)' }}>
+            Diagnostics and endpoint configuration for the Sovereign Enterprise instance.
+          </p>
         </div>
       </div>
 
-      {/* API Mapping Diagnostics */}
-      <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-md space-y-4">
-        <div className="flex items-center space-x-3 text-slate-300">
-          <Terminal className="h-5 w-5 text-indigo-400" />
-          <h3 className="text-sm font-semibold">Backend API Endpoint Map</h3>
-        </div>
-        <p className="text-xs text-slate-500">
-          This Sovereign workspace relies on the following backend routers for indexing and inference. No public cloud APIs are mapped.
-        </p>
+      <div style={{ padding: '32px 48px', maxWidth: '1000px' }}>
+        <div className="grid grid-cols-2 gap-5 mb-5">
+          {/* Instance Diagnostics */}
+          <div style={cardStyle}>
+            <div className="flex items-center gap-2 mb-5">
+              <div style={{ color: '#818cf8' }}><Cpu className="h-4 w-4" /></div>
+              <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}>
+                Instance Diagnostics
+              </span>
+            </div>
+            <div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>Backend Status</span>
+                <BackendStatus />
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>API Runtime</span>
+                <span style={valueStyle}>FastAPI (Python)</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>Deployment</span>
+                <span style={{ ...valueStyle, color: '#818cf8' }}>On-Premise · Private</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={labelStyle}>AI Orchestration</span>
+                <span style={valueStyle}>Backend Managed</span>
+              </div>
+            </div>
+          </div>
 
-        <div className="overflow-x-auto pt-2">
-          <table className="w-full text-left border-collapse text-xs">
+          {/* Security Profile */}
+          <div style={cardStyle}>
+            <div className="flex items-center gap-2 mb-5">
+              <div style={{ color: '#34d399' }}><ShieldCheck className="h-4 w-4" /></div>
+              <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}>
+                Security Profile
+              </span>
+            </div>
+            <div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>Data Isolation</span>
+                <span style={{ ...valueStyle, color: '#34d399' }}>Strict · 100% Local</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>Network Policy</span>
+                <span style={valueStyle}>No external telemetry</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>Vector Storage</span>
+                <span style={valueStyle}>Chroma / SQLite</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={labelStyle}>LLM Provider</span>
+                <span style={valueStyle}>Self-Hosted GGUF</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* API Endpoint Map */}
+        <div style={cardStyle}>
+          <div className="flex items-center gap-2 mb-5">
+            <div style={{ color: '#818cf8' }}><Terminal className="h-4 w-4" /></div>
+            <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(148, 163, 184, 0.4)', fontFamily: "'JetBrains Mono', monospace" }}>
+              Backend API Endpoint Map
+            </span>
+          </div>
+          <p style={{ fontSize: '12px', color: 'rgba(148, 163, 184, 0.35)', marginBottom: '16px' }}>
+            All inference and indexing routes operate locally. No public cloud APIs are mapped.
+          </p>
+          <table style={{ width: '100%', borderCollapse: 'collapse' as const }}>
             <thead>
-              <tr className="border-b border-[#1e293b] text-slate-500">
-                <th className="pb-3 font-semibold w-24">Method</th>
-                <th className="pb-3 font-semibold font-mono">Endpoint Path</th>
-                <th className="pb-3 font-semibold text-right">Description</th>
+              <tr style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.06)' }}>
+                {['Method', 'Endpoint', 'Description'].map((h) => (
+                  <th key={h} style={{ padding: '0 0 10px', textAlign: 'left' as const, fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'rgba(148, 163, 184, 0.3)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {routes.map((route, idx) => (
-                <tr key={idx} className="border-b border-[#1e293b]/30 last:border-0 hover:bg-[#090d16]/30">
-                  <td className="py-3 font-bold">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] ${
-                        route.method === 'GET'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                      }`}
-                    >
+                <tr
+                  key={idx}
+                  style={{
+                    borderBottom: idx < routes.length - 1 ? '1px solid rgba(148, 163, 184, 0.04)' : 'none',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(148, 163, 184, 0.02)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}
+                >
+                  <td style={{ padding: '12px 0', width: '80px' }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      background: route.method === 'GET' ? 'rgba(52, 211, 153, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+                      border: route.method === 'GET' ? '1px solid rgba(52, 211, 153, 0.15)' : '1px solid rgba(99, 102, 241, 0.15)',
+                      color: route.method === 'GET' ? '#34d399' : '#818cf8',
+                    }}>
                       {route.method}
                     </span>
                   </td>
-                  <td className="py-3 font-mono text-slate-300">{route.path}</td>
-                  <td className="py-3 text-slate-400 text-right">{route.desc}</td>
+                  <td style={{ padding: '12px 16px 12px 0', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: 'rgba(226, 232, 240, 0.7)' }}>
+                    {route.path}
+                  </td>
+                  <td style={{ padding: '12px 0', fontSize: '12px', color: 'rgba(148, 163, 184, 0.4)' }}>
+                    {route.desc}
+                  </td>
                 </tr>
               ))}
             </tbody>

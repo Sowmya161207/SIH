@@ -4,6 +4,7 @@ from pathlib import Path
 
 from app.models.chat import ChatRequest, ChatResponse, Source
 from app.services.llm_service import generate_answer
+from app.services.model_router import get_available_model
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +67,15 @@ class ChatService:
                 )
 
             # ---------------------------------------------------------
-            # STEP 4: Generate answer using LOCAL Ollama LLM
+            # STEP 4: Select Model & Generate answer using LOCAL Ollama LLM
             # ---------------------------------------------------------
+            selected_model = await get_available_model(intent=None, message=request.message)
+            logger.info("ChatService routing request to model: %s", selected_model)
+
             answer = await generate_answer(
                 question=request.message,
                 evidence=evidence,
+                model=selected_model,
             )
 
             # ---------------------------------------------------------

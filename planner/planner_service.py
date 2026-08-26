@@ -45,7 +45,13 @@ class PlannerService:
         :param mode: Execution mode, e.g., 'mock' or 'llm'. Can also be set via PLANNER_MODE env var.
         """
         self.mode = mode or os.environ.get("PLANNER_MODE", "mock").lower()
-        self.llm_client = llm_client or MockPlannerLLMClient()
+        if llm_client:
+            self.llm_client = llm_client
+        elif self.mode == "llm":
+            from .ollama_client import OllamaPlannerLLMClient
+            self.llm_client = OllamaPlannerLLMClient()
+        else:
+            self.llm_client = MockPlannerLLMClient()
 
     async def plan(
         self,

@@ -1,5 +1,7 @@
 import React from 'react';
 import BackendStatus from '../components/layout/BackendStatus';
+import NetworkMonitor from '../components/layout/NetworkMonitor';
+import CodeSandboxPanel from '../components/chat/CodeSandboxPanel';
 import { ShieldCheck, Cpu, Terminal } from 'lucide-react';
 
 export const SystemStatus: React.FC = () => {
@@ -7,17 +9,25 @@ export const SystemStatus: React.FC = () => {
     { method: 'GET', path: '/api/health', desc: 'Checks live connection state' },
     { method: 'POST', path: '/api/chat', desc: 'Queries models with local context history' },
     { method: 'POST', path: '/api/documents', desc: 'Uploads and indexes PDF documents' },
-    { method: 'GET', path: '/api/documents/{document_id}', desc: 'Polls document analyzer states' },
+    { method: 'POST', path: '/api/generate/approval-note', desc: 'Exports Word (.docx) approval notes' },
+    { method: 'POST', path: '/api/sandbox/run', desc: 'Runs Python code in isolated sandbox' },
+    { method: 'GET', path: '/api/telemetry/network-calls', desc: 'Verifies 0-external-call air-gap audit' },
   ];
 
   return (
     <div className="space-y-8 animate-fadeIn max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">System Status</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">System Status & Sovereign Auditing</h1>
         <p className="text-xs text-slate-400 mt-1">
-          Diagnostics and configuration for the Sovereign AI instance.
+          Real-time diagnostics, local sandbox execution, and network sovereignty proof.
         </p>
       </div>
+
+      {/* Network Sovereignty Audit Monitor */}
+      <NetworkMonitor />
+
+      {/* Interactive Code Execution Sandbox */}
+      <CodeSandboxPanel />
 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,16 +1,19 @@
 import logging
 import httpx
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-OLLAMA_MODEL = "llama3.1:8b"
 
 
 async def generate_answer(
     question: str,
     evidence: list[dict],
+    model: str | None = None,
 ) -> str:
+    target_model = model or settings.OLLAMA_MODEL
 
     if not evidence:
         return (
@@ -56,7 +59,7 @@ ANSWER:
 """
 
     payload = {
-        "model": OLLAMA_MODEL,
+        "model": target_model,
         "prompt": prompt,
         "stream": False,
         "options": {
@@ -67,8 +70,10 @@ ANSWER:
     try:
         logger.info(
             "Sending request to local Ollama model: %s",
-            OLLAMA_MODEL,
+            target_model,
         )
+
+        from app.services.network_logger import record_network_call
 
         async with httpx.AsyncClient(timeout=120.0) as client:
 
@@ -80,6 +85,15 @@ ANSWER:
             response.raise_for_status()
 
             data = response.json()
+
+        record_network_call(
+            destination=OLLAMA_URL,
+            method="POST",
+            purpose=f"Local LLM Inference ({target_model})",
+            bytes_sent=len(prompt),
+            bytes_received=len(data.get("response", "")),
+            status_code=response.status_code,
+        )
 
         answer = data.get("response", "").strip()
 

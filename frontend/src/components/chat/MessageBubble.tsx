@@ -1,7 +1,7 @@
 import React from 'react';
 import { Message } from '../../types/chat';
 import SourceList from './SourceList';
-import { User, Bot } from 'lucide-react';
+import { User, Bot, FileText } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -43,13 +43,33 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           <SourceList sources={message.sources} />
         )}
 
-        <span
-          className={`text-[9px] font-mono mt-2 self-end ${
-            isUser ? 'text-indigo-200/80' : 'text-slate-500'
-          }`}
-        >
-          {formatTime(message.timestamp)}
-        </span>
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-800/60">
+          {!isUser ? (
+            <button
+              onClick={async () => {
+                try {
+                  const { exportApprovalNote } = await import('../../services/api/export');
+                  await exportApprovalNote(message.content, 'AI Generated Approval Note');
+                } catch (e) {
+                  alert('Export failed: ' + e);
+                }
+              }}
+              className="inline-flex items-center space-x-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium cursor-pointer"
+              title="Export as formatted Word Approval Note (.docx)"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Export .docx</span>
+            </button>
+          ) : <div />}
+
+          <span
+            className={`text-[9px] font-mono ${
+              isUser ? 'text-indigo-200/80' : 'text-slate-500'
+            }`}
+          >
+            {formatTime(message.timestamp)}
+          </span>
+        </div>
       </div>
 
       {/* Icon/Avatar for User */}

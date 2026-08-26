@@ -13,7 +13,7 @@ from app.core.exceptions import (
     generic_exception_handler,
 )
 from app.utils.logging import setup_logging
-from app.api import health, chat, documents
+from app.api import health, chat, documents, generate, sandbox, telemetry
 
 
 @asynccontextmanager
@@ -51,10 +51,12 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 # Include API Routers with /api prefix
-api_router = FastAPI()
 app.include_router(health.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
+app.include_router(generate.router)
+app.include_router(sandbox.router)
+app.include_router(telemetry.router)
 
 
 if __name__ == "__main__":

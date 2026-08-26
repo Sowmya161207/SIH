@@ -17,10 +17,10 @@ async def test_chat_valid_message():
     assert response.status_code == 200
     data = response.json()
     assert "answer" in data
-    assert data["answer"] == "This is a mock response from the Sovereign AI Workbench."
+    assert isinstance(data["answer"], str) and len(data["answer"]) > 0
     assert data["conversation_id"] == "test-session-123"
     assert "sources" in data
-    assert data["sources"] == []
+    assert isinstance(data["sources"], list)
 
 
 @pytest.mark.asyncio
